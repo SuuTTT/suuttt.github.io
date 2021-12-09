@@ -78,60 +78,6 @@
       <div class="outer">
         <section id="main">
   
-    <article id="post-hierarchy-on-KGE-proposal" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/porject/2021/12/09/hierarchy-on-KGE-proposal/" class="article-date">
-  <time class="dt-published" datetime="2021-12-09T08:12:49.000Z" itemprop="datePublished">2021-12-09</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/porject/2021/12/09/hierarchy-on-KGE-proposal/">hierarchy_on_KGE_proposal</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h1 id="Hierarchical-clustering-on-KGE"><a href="#Hierarchical-clustering-on-KGE" class="headerlink" title="Hierarchical clustering on KGE"></a>Hierarchical clustering on KGE</h1><h2 id="TASK-Overview"><a href="#TASK-Overview" class="headerlink" title="TASK Overview"></a>TASK Overview</h2><h3 id="任务"><a href="#任务" class="headerlink" title="任务"></a>任务</h3><p>知识库嵌入，得到三元组(h,r,t)中实体和关系的向量表示，进一步用于下游任务，比如三元组分类（triple classification），实体识别，连接预测(link prediction)，知识图谱补全。</p>
-<h3 id="数据集"><a href="#数据集" class="headerlink" title="数据集"></a>数据集</h3><p>常见的数据集FB15k, WN18, YAGO3-10及其变种分别是从freebase,wordNet, YAGO中提取的三元组。目前最流行的数据集如下[^2]：</p>
-<p><img src="hierarchy-on-KGE-proposal.assets/image-20211209161732197.png" alt="image-20211209161732197"></p>
-<h3 id="SOTA"><a href="#SOTA" class="headerlink" title="SOTA"></a>SOTA</h3><p>比较 SOTA 结果比较困难，因为存在不同的训练策略（例如负例生成策略）、不同或次优的超参数选择。</p>
-<p><img src="hierarchy-on-KGE-proposal.assets/image-20211209162313804.png" alt="image-20211209162313804"></p>
-<h3 id="评价指标"><a href="#评价指标" class="headerlink" title="评价指标"></a>评价指标</h3><p>连接预测，即预测首尾实体或是关系。这个问题的特点是没有ground-truth的负例，因核心想法是利用对嵌入进行排序来将该问题转化为Learning-To-Rank 问题：正三元组在局部封闭世界假设下相对于合成负例的排名如何。</p>
-<p>具体有MR，MMR，hit@k</p>
-<p><img src="hierarchy-on-KGE-proposal.assets/image-20211209162417428.png" alt="image-20211209162417428"></p>
-<h2 id="方法与实现"><a href="#方法与实现" class="headerlink" title="方法与实现"></a>方法与实现</h2><h4 id="模型"><a href="#模型" class="headerlink" title="模型"></a>模型</h4><p>基于Knowledge Graph Embedding with Hierarchical Relation Structure [^1]的模型：在transE模型的基础上，对嵌入进行聚类后进一步学习。transE模型就是通过生成负例，定义让正例得分高于负例的得分函数，以其为目标函数对嵌入进行学习。</p>
-<h3 id="现在的问题"><a href="#现在的问题" class="headerlink" title="现在的问题"></a>现在的问题</h3><p>1需要指定聚类数量k，</p>
-<p>2 语义层次人为设定成3层，每层只是平面聚类。</p>
-<p>3 可以进一步考虑对entity聚类</p>
-<h3 id="选择的框架"><a href="#选择的框架" class="headerlink" title="选择的框架"></a>选择的框架</h3><p>pytorch实现。</p>
-<p>[^1]: [<a target="_blank" rel="noopener" href="https://www.semanticscholar.org/paper/Knowledge-Graph-Embedding-with-Hierarchical-Zhang-Zhuang/86ac98157da100a529ca65fe6e1da064b0a651e8">PDF] Knowledge Graph Embedding with Hierarchical Relation Structure | Semantic Scholar</a><br>[^2]: <a target="_blank" rel="noopener" href="https://kge-tutorial-ecai2020.github.io/ECAI-20_KGE_tutorial.pdf">ECAI-20_KGE_tutorial.pdf (kge-tutorial-ecai2020.github.io)</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://suuttt.github.io/porject/2021/12/09/hierarchy-on-KGE-proposal/" data-id="ckwypsrmx0000rctralo76o34" data-title="hierarchy_on_KGE_proposal" class="article-share-link">Share</a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/porject/tags/KG/" rel="tag">KG</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/porject/tags/%E5%AD%A6%E4%B9%A0%E7%AE%97%E6%B3%95/" rel="tag">学习算法</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
     <article id="post-newpaper" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/porject/2021/12/08/newpaper/" class="article-date">
@@ -158,7 +104,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://suuttt.github.io/porject/2021/12/08/newpaper/" data-id="ckwypsrne0006rctrfd9lh4yw" data-title="newpaper" class="article-share-link">Share</a>
+      <a data-url="https://suuttt.github.io/porject/2021/12/08/newpaper/" data-id="ckwypy3e90001zotrearig2rl" data-title="newpaper" class="article-share-link">Share</a>
       
       
       
@@ -215,7 +161,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://suuttt.github.io/porject/2021/12/08/hello-world/" data-id="ckwypsrn30001rctr89jq5loc" data-title="Hello World" class="article-share-link">Share</a>
+      <a data-url="https://suuttt.github.io/porject/2021/12/08/hello-world/" data-id="ckwypy3du0000zotrc0uefhbf" data-title="Hello World" class="article-share-link">Share</a>
       
       
       
@@ -240,7 +186,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/porject/tags/KG/" rel="tag">KG</a></li><li class="tag-list-item"><a class="tag-list-link" href="/porject/tags/idea/" rel="tag">idea</a></li><li class="tag-list-item"><a class="tag-list-link" href="/porject/tags/%E5%AD%A6%E4%B9%A0%E7%AE%97%E6%B3%95/" rel="tag">学习算法</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/porject/tags/idea/" rel="tag">idea</a></li></ul>
     </div>
   </div>
 
@@ -250,7 +196,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/porject/tags/KG/" style="font-size: 10px;">KG</a> <a href="/porject/tags/idea/" style="font-size: 10px;">idea</a> <a href="/porject/tags/%E5%AD%A6%E4%B9%A0%E7%AE%97%E6%B3%95/" style="font-size: 10px;">学习算法</a>
+      <a href="/porject/tags/idea/" style="font-size: 10px;">idea</a>
     </div>
   </div>
 
@@ -270,10 +216,6 @@
     <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
-        
-          <li>
-            <a href="/porject/2021/12/09/hierarchy-on-KGE-proposal/">hierarchy_on_KGE_proposal</a>
-          </li>
         
           <li>
             <a href="/porject/2021/12/08/newpaper/">newpaper</a>

@@ -100,69 +100,28 @@
 
     <div class="e-content article-entry" itemprop="articleBody">
 
-      <p>Distill posts are really just long-form HTML with inline CSS and a pinch of JavaScript for scrollytelling or interactive notes. You can recreate that feel on Hugo + PaperMod without any backend by leaning on three patterns, and each pattern maps neatly to common AI explainers.</p>
-      <h2 id="Tiny-interactive-widgets-via-shortcodes"><a href="#Tiny-interactive-widgets-via-shortcodes" class="headerlink" title="Tiny interactive widgets via shortcodes"></a>Tiny interactive widgets via shortcodes</h2><p>Wrap small, in-line widgets (temperature sliders, activation previews, etc.) in shortcodes so authors can drop <code>{{&lt; softmax-widget &gt;}}</code> inside Markdown. The shortcode template can live in <code>layouts/shortcodes/softmax-widget.html</code> and include both the markup and a minimal script:</p>
+      <p>Distill posts are really just long-form HTML with inline CSS and a pinch of JavaScript for scrollytelling or interactive notes. You can recreate that feel on Hugo + PaperMod without any backend by leaning on three patterns:</p>
+      <h2 id="Tiny-interactive-widgets-via-shortcodes"><a href="#Tiny-interactive-widgets-via-shortcodes" class="headerlink" title="Tiny interactive widgets via shortcodes"></a>Tiny interactive widgets via shortcodes</h2><p>Wrap any small widget (like a slider + output span) in a shortcode so authors can drop <code>{{&lt; slider-demo &gt;}}</code> inside Markdown. The shortcode template can live in <code>layouts/shortcodes/slider-demo.html</code> and include both the markup and a minimal script:</p>
 <pre><code class="language-html">&lt;div class="distill-widget"&gt;
-  &lt;label&gt;
-    Temperature
-    &lt;input type="range" min="0.2" max="2.5" step="0.1" value="1" oninput="updateTemp(this.value)"&gt;
-  &lt;/label&gt;
-  &lt;div class="logits"&gt;logits: [1.2, 0.3, -0.1]&lt;/div&gt;
-  &lt;div class="probs" aria-live="polite"&gt;softmax: [0.58, 0.27, 0.15]&lt;/div&gt;
+  &lt;input type="range" min="0" max="10" value="5" oninput="this.nextElementSibling.textContent = this.value" /&gt;
+  &lt;span&gt;5&lt;/span&gt;
 &lt;/div&gt;
-&lt;script&gt;
-  const logits = [1.2, 0.3, -0.1];
-  const softmax = (xs, t) =&gt; {
-    const exps = xs.map(x =&gt; Math.exp(x / t));
-    const sum = exps.reduce((a, b) =&gt; a + b, 0);
-    return exps.map(x =&gt; (x / sum).toFixed(2));
-  };
-  function updateTemp(t) {
-    const probs = softmax(logits, Number(t));
-    document.querySelector('.probs').textContent = `softmax: [${probs.join(', ')}] (T=${t})`;
-  }
-&lt;/script&gt;
 &lt;style&gt;
-.distill-widget { border:1px solid #ececec; padding:12px; border-radius:8px; display:flex; flex-direction:column; gap:0.5rem; }
-.distill-widget label { font-weight:600; display:flex; justify-content:space-between; gap:0.75rem; align-items:center; }
-.distill-widget input[type=range] { flex:1; }
-.distill-widget .probs { font-family: var(--code-font, 'Source Code Pro', monospace); }
+.distill-widget { display:flex; gap:0.5rem; align-items:center; }
 &lt;/style&gt;
 </code></pre>
-      <p>The shortcode is pure HTML/CSS/JS, so it survives GitHub Pages builds and keeps the Distill vibe.</p>
-      <h2 id="Bigger-experiments-via-iframes"><a href="#Bigger-experiments-via-iframes" class="headerlink" title="Bigger experiments via iframes"></a>Bigger experiments via iframes</h2><p>For heavier sketches (attention heatmaps, 2D latent walks, WebGL demos), export them as standalone static HTML files and place them under <code>static/experiments/</code>. Then embed with an iframe from your post body:</p>
+      <p>Because the shortcode is pure HTML/CSS/JS, it survives GitHub Pages builds and keeps the Distill vibe.</p>
+      <h2 id="Bigger-experiments-via-iframes"><a href="#Bigger-experiments-via-iframes" class="headerlink" title="Bigger experiments via iframes"></a>Bigger experiments via iframes</h2><p>For heavier sketches (Observable notebooks, three.js demos, etc.), export them as standalone static HTML files and place them under <code>static/experiments/</code> in your Hugo project. Then embed with an iframe from your post body:</p>
 <pre><code class="language-html">&lt;figure class="distill-embed"&gt;
   &lt;iframe src="/experiments/attention-demo/index.html" title="Attention demo" loading="lazy"&gt;&lt;/iframe&gt;
   &lt;figcaption&gt;Fully static embed that still works on GitHub Pages.&lt;/figcaption&gt;
 &lt;/figure&gt;
 &lt;style&gt;
 .distill-embed iframe { width:100%; min-height:420px; border:1px solid #e0e0e0; border-radius:8px; }
-.distill-embed figcaption { text-align:center; color:#555; margin-top:0.5rem; font-size:0.95rem; }
 &lt;/style&gt;
 </code></pre>
       <p>This keeps interactivity isolated and lets you iterate on the experiment without touching the main post content.</p>
       <h2 id="Custom-layouts-for-special-posts"><a href="#Custom-layouts-for-special-posts" class="headerlink" title="Custom layouts for special posts"></a>Custom layouts for special posts</h2><p>When a piece needs a bespoke Distill-like layout (floating sidenotes, scrolling stepper, etc.), create a custom single layout: <code>layouts/_default/single.distill.html</code>. In your front matter, set <code>layout: distill</code> to opt in. The layout can add sticky sidenotes and include a dedicated stylesheet at <code>assets/css/distill.css</code> for typography tweaks.</p>
-      <p>For step-by-step AI explainers, a minimal scroll-step pattern keeps the HTML lightweight:</p>
-<pre><code class="language-html">&lt;section class="stepper"&gt;
-  &lt;div class="step" data-label="1"&gt;
-    &lt;h4&gt;Layer norm&lt;/h4&gt;
-    &lt;p&gt;Normalize tokens, keep residual stream.&lt;/p&gt;
-  &lt;/div&gt;
-  &lt;div class="step" data-label="2"&gt;
-    &lt;h4&gt;Multi-head attention&lt;/h4&gt;
-    &lt;p&gt;Show per-head weights in an adjacent canvas.&lt;/p&gt;
-  &lt;/div&gt;
-  &lt;div class="step" data-label="3"&gt;
-    &lt;h4&gt;MLP&lt;/h4&gt;
-    &lt;p&gt;Switch activations (GELU/ReLU) with buttons.&lt;/p&gt;
-  &lt;/div&gt;
-&lt;/section&gt;
-&lt;style&gt;
-.stepper { display:grid; gap:1rem; border-left:3px solid #111; padding-left:1rem; }
-.step { position:relative; }
-.step::before { content: attr(data-label); position:absolute; left:-2.6rem; top:0; font-weight:700; }
-&lt;/style&gt;
-</code></pre>
       <h2 id="Author-workflow-tips"><a href="#Author-workflow-tips" class="headerlink" title="Author workflow tips"></a>Author workflow tips</h2><ul>
         <li>Keep reusable CSS (grid helpers, note callouts) in <code>assets/css/distill.css</code> and import it globally via <code>params.assets</code> in <code>config.yaml</code>.</li>
         <li>Namespace your JavaScript (e.g., <code>window.distillWidgets = {...}</code>) to avoid conflicts with PaperMod scripts.</li>
@@ -194,7 +153,8 @@
 
 
         </section>
-        <aside id="sidebar">
+      </div>
+      <aside id="sidebar">
 
 
 
@@ -216,9 +176,8 @@
   </div>
 
 
+</aside>
 
-        </aside>
-      </div>
       <footer id="footer">
 
   <div class="outer">

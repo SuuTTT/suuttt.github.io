@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+
+
+  <title>Distill-style experiments on Hugo PaperMod | SuuTTT的小站</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="Mini guide for Distill-like long-form posts in Hugo/PaperMod">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Distill-style experiments on Hugo PaperMod">
+<meta property="og:url" content="https://suuttt.github.io/2025/05/29/distill-style-in-hugo/index.html">
+<meta property="og:site_name" content="SuuTTT的小站">
+<meta property="og:description" content="Mini guide for Distill-like long-form posts in Hugo/PaperMod">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2025-05-29T00:00:00.000Z">
+<meta property="article:modified_time" content="2025-05-29T00:00:00.000Z">
+<meta property="article:author" content="SuuTTT">
+<meta property="article:tag" content="Hugo">
+<meta name="twitter:card" content="summary">
+
+    <link rel="alternate" href="/atom.xml" title="SuuTTT的小站" type="application/atom+xml">
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
+
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">SuuTTT的小站</a>
+      </h1>
+
+        <h2 id="subtitle-wrap">
+          <a href="/" id="subtitle">CS master from scratch</a>
+        </h2>
+
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+
+          <a class="main-nav-link" href="/">Home</a>
+
+          <a class="main-nav-link" href="/archives">Archives</a>
+
+      </nav>
+      <nav id="sub-nav">
+
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://suuttt.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-distill-style-in-hugo" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2025/05/29/distill-style-in-hugo/" class="article-date">
+  <time class="dt-published" datetime="2025-05-29T00:00:00.000Z" itemprop="datePublished">2025-05-29</time>
+</a>
+
+  </div>
+  <div class="article-inner">
+
+
+      <header class="article-header">
+
+
+    <h1 class="p-name article-title" itemprop="headline name">
+      Distill-style experiments on Hugo PaperMod
+    </h1>
+
+
+      </header>
+
+    <div class="e-content article-entry" itemprop="articleBody">
+
+      <p>Distill posts are really just long-form HTML with inline CSS and a pinch of JavaScript for scrollytelling or interactive notes. You can recreate that feel on Hugo + PaperMod without any backend by leaning on three patterns, and each pattern maps neatly to common AI explainers.</p>
+      <h2 id="Tiny-interactive-widgets-via-shortcodes"><a href="#Tiny-interactive-widgets-via-shortcodes" class="headerlink" title="Tiny interactive widgets via shortcodes"></a>Tiny interactive widgets via shortcodes</h2><p>Wrap small, in-line widgets (temperature sliders, activation previews, etc.) in shortcodes so authors can drop <code>{{&lt; softmax-widget &gt;}}</code> inside Markdown. The shortcode template can live in <code>layouts/shortcodes/softmax-widget.html</code> and include both the markup and a minimal script:</p>
+<pre><code class="language-html">&lt;div class="distill-widget"&gt;
+  &lt;label&gt;
+    Temperature
+    &lt;input type="range" min="0.2" max="2.5" step="0.1" value="1" oninput="updateTemp(this.value)"&gt;
+  &lt;/label&gt;
+  &lt;div class="logits"&gt;logits: [1.2, 0.3, -0.1]&lt;/div&gt;
+  &lt;div class="probs" aria-live="polite"&gt;softmax: [0.58, 0.27, 0.15]&lt;/div&gt;
+&lt;/div&gt;
+&lt;script&gt;
+  const logits = [1.2, 0.3, -0.1];
+  const softmax = (xs, t) =&gt; {
+    const exps = xs.map(x =&gt; Math.exp(x / t));
+    const sum = exps.reduce((a, b) =&gt; a + b, 0);
+    return exps.map(x =&gt; (x / sum).toFixed(2));
+  };
+  function updateTemp(t) {
+    const probs = softmax(logits, Number(t));
+    document.querySelector('.probs').textContent = `softmax: [${probs.join(', ')}] (T=${t})`;
+  }
+&lt;/script&gt;
+&lt;style&gt;
+.distill-widget { border:1px solid #ececec; padding:12px; border-radius:8px; display:flex; flex-direction:column; gap:0.5rem; }
+.distill-widget label { font-weight:600; display:flex; justify-content:space-between; gap:0.75rem; align-items:center; }
+.distill-widget input[type=range] { flex:1; }
+.distill-widget .probs { font-family: var(--code-font, 'Source Code Pro', monospace); }
+&lt;/style&gt;
+</code></pre>
+      <p>The shortcode is pure HTML/CSS/JS, so it survives GitHub Pages builds and keeps the Distill vibe.</p>
+      <h2 id="Bigger-experiments-via-iframes"><a href="#Bigger-experiments-via-iframes" class="headerlink" title="Bigger experiments via iframes"></a>Bigger experiments via iframes</h2><p>For heavier sketches (attention heatmaps, 2D latent walks, WebGL demos), export them as standalone static HTML files and place them under <code>static/experiments/</code>. Then embed with an iframe from your post body:</p>
+<pre><code class="language-html">&lt;figure class="distill-embed"&gt;
+  &lt;iframe src="/experiments/attention-demo/index.html" title="Attention demo" loading="lazy"&gt;&lt;/iframe&gt;
+  &lt;figcaption&gt;Fully static embed that still works on GitHub Pages.&lt;/figcaption&gt;
+&lt;/figure&gt;
+&lt;style&gt;
+.distill-embed iframe { width:100%; min-height:420px; border:1px solid #e0e0e0; border-radius:8px; }
+.distill-embed figcaption { text-align:center; color:#555; margin-top:0.5rem; font-size:0.95rem; }
+&lt;/style&gt;
+</code></pre>
+      <p>This keeps interactivity isolated and lets you iterate on the experiment without touching the main post content.</p>
+      <h2 id="Custom-layouts-for-special-posts"><a href="#Custom-layouts-for-special-posts" class="headerlink" title="Custom layouts for special posts"></a>Custom layouts for special posts</h2><p>When a piece needs a bespoke Distill-like layout (floating sidenotes, scrolling stepper, etc.), create a custom single layout: <code>layouts/_default/single.distill.html</code>. In your front matter, set <code>layout: distill</code> to opt in. The layout can add sticky sidenotes and include a dedicated stylesheet at <code>assets/css/distill.css</code> for typography tweaks.</p>
+      <p>For step-by-step AI explainers, a minimal scroll-step pattern keeps the HTML lightweight:</p>
+<pre><code class="language-html">&lt;section class="stepper"&gt;
+  &lt;div class="step" data-label="1"&gt;
+    &lt;h4&gt;Layer norm&lt;/h4&gt;
+    &lt;p&gt;Normalize tokens, keep residual stream.&lt;/p&gt;
+  &lt;/div&gt;
+  &lt;div class="step" data-label="2"&gt;
+    &lt;h4&gt;Multi-head attention&lt;/h4&gt;
+    &lt;p&gt;Show per-head weights in an adjacent canvas.&lt;/p&gt;
+  &lt;/div&gt;
+  &lt;div class="step" data-label="3"&gt;
+    &lt;h4&gt;MLP&lt;/h4&gt;
+    &lt;p&gt;Switch activations (GELU/ReLU) with buttons.&lt;/p&gt;
+  &lt;/div&gt;
+&lt;/section&gt;
+&lt;style&gt;
+.stepper { display:grid; gap:1rem; border-left:3px solid #111; padding-left:1rem; }
+.step { position:relative; }
+.step::before { content: attr(data-label); position:absolute; left:-2.6rem; top:0; font-weight:700; }
+&lt;/style&gt;
+</code></pre>
+      <h2 id="Author-workflow-tips"><a href="#Author-workflow-tips" class="headerlink" title="Author workflow tips"></a>Author workflow tips</h2><ul>
+        <li>Keep reusable CSS (grid helpers, note callouts) in <code>assets/css/distill.css</code> and import it globally via <code>params.assets</code> in <code>config.yaml</code>.</li>
+        <li>Namespace your JavaScript (e.g., <code>window.distillWidgets = {...}</code>) to avoid conflicts with PaperMod scripts.</li>
+        <li>Document each shortcode with a minimal usage example so future posts stay consistent.</li>
+      </ul>
+
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://suuttt.github.io/2025/05/29/distill-style-in-hugo/" data-id="ckwyto4an0000distill2025" data-title="Distill-style experiments on Hugo PaperMod" class="article-share-link">Share</a>
+
+
+
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hugo/" rel="tag">Hugo</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PaperMod/" rel="tag">PaperMod</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Distill/" rel="tag">Distill</a></li></ul>
+
+    </footer>
+  </div>
+
+
+<nav id="article-nav">
+
+    <a href="/2021/12/09/hierarchy-on-KGE-proposal/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">hierarchy_on_KGE_proposal</div>
+    </a>
+
+</nav>
+
+</article>
+
+
+        </section>
+        <aside id="sidebar">
+
+
+
+
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/06/">June 2025</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/05/">May 2025</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2021/12/">December 2021</a></li></ul>
+    </div>
+  </div>
+
+
+
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AI/" rel="tag">AI</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Codex/" rel="tag">Codex</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Distill/" rel="tag">Distill</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/GitHub/" rel="tag">GitHub</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hugo/" rel="tag">Hugo</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/KG/" rel="tag">KG</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PaperMod/" rel="tag">PaperMod</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/idea/" rel="tag">idea</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AE%97%E6%B3%95/" rel="tag">学习算法</a></li></ul>
+    </div>
+  </div>
+
+
+
+        </aside>
+      </div>
+      <footer id="footer">
+
+  <div class="outer">
+    <div id="footer-info" class="inner">
+
+      &copy; 2025 SuuTTT<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+
+    <a href="/" class="mobile-nav-link">Home</a>
+
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+
+</nav>
+
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Welcome on Dingli Su | PhD Student in AI</title><link>https://suuttt.github.io/</link><description>Recent content in Welcome on Dingli Su | PhD Student in AI</description><generator>Hugo</generator><language>en-us</language><lastBuildDate>Wed, 22 Apr 2026 00:00:00 +0000</lastBuildDate><atom:link href="https://suuttt.github.io/index.xml" rel="self" type="application/rss+xml"/><item><title>SIDM in Practice: A Distill-Style Guide from Paper to Code</title><link>https://suuttt.github.io/projects/sidm-in-practice-distill-style-guide/</link><pubDate>Wed, 22 Apr 2026 00:00:00 +0000</pubDate><guid>https://suuttt.github.io/projects/sidm-in-practice-distill-style-guide/</guid><description>&lt;blockquote>
+&lt;p>A reader-friendly, implementation-grounded introduction to the SIDM framework from the original paper to the public code.&lt;/p>&lt;/blockquote>
+&lt;hr>
+&lt;h2 id="tldr">TL;DR&lt;/h2>
+&lt;p>&lt;strong>SIDM (Structural Information-based Decision Making)&lt;/strong> is proposed in the paper &lt;strong>“Hierarchical Decision Making Based on Structural Information Principles”&lt;/strong> (&lt;a href="https://arxiv.org/html/2404.09760v2">paper link&lt;/a>).&lt;/p>
+&lt;p>The paper presents a unified abstraction idea; the code implements this in separate tracks:&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>SISA&lt;/strong> (state abstraction) built on &lt;strong>RAD/CURL + SAC&lt;/strong> (&lt;a href="https://github.com/MishaLaskin/rad">RAD&lt;/a>, &lt;a href="https://github.com/MishaLaskin/curl">CURL&lt;/a>).&lt;/li>
+&lt;li>&lt;strong>SISL&lt;/strong> (skill learning) built on a &lt;strong>ReSkill-style hierarchical pipeline&lt;/strong> (&lt;a href="https://github.com/krishanrana/reskill">ReSkill reference&lt;/a>).&lt;/li>
+&lt;li>&lt;strong>SIRD&lt;/strong> (role side, not the deep focus of this blog).&lt;/li>
+&lt;/ul>
+&lt;p>Core takeaway:&lt;/p></description></item><item><title>Setting up Hugo with GitHub Actions &amp; Blowfish</title><link>https://suuttt.github.io/wiki/hugo-github-actions/</link><pubDate>Tue, 10 Mar 2026 00:00:00 +0000</pubDate><guid>https://suuttt.github.io/wiki/hugo-github-actions/</guid><description>&lt;h3 id="why-github-actions-for-hugo">Why GitHub Actions for Hugo?&lt;/h3>
+&lt;p>Manually building and uploading your &lt;code>public/&lt;/code> folder is a thing of the past. Using &lt;strong>GitHub Actions&lt;/strong>, every time you push content, the site is built and deployed automatically. This is especially useful for &lt;strong>Blowfish&lt;/strong> theme users because it requires specific Hugo versions and submodule handling.&lt;/p>
+&lt;h4 id="1-configure-the-workflow">1. Configure the Workflow&lt;/h4>
+&lt;p>Create a file at &lt;code>.github/workflows/hugo.yml&lt;/code>. Here&amp;rsquo;s a version compatible with the Blowfish theme (requiring Hugo &lt;code>0.145.0+&lt;/code>):&lt;/p></description></item><item><title>CV</title><link>https://suuttt.github.io/cv/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://suuttt.github.io/cv/</guid><description>&lt;h1 id="curriculum-vitae">Curriculum Vitae&lt;/h1>
+&lt;p>You can &lt;a href="https://suuttt.github.io/pdf/cv.pdf">Download my CV here&lt;/a>.&lt;/p>
+&lt;iframe src="https://suuttt.github.io/pdf/cv.pdf" width="100%" height="1000px" style="border:none;">
+ This browser does not support PDFs. Please download the PDF to view it: [Download PDF](/pdf/cv.pdf).
+&lt;/iframe></description></item></channel></rss>

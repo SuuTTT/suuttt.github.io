@@ -107,7 +107,7 @@ Meaning:
 
 #### (d) Aggregate transition between abstract states
 
-For abstract groups $a,b$, aggregate transition mass from members:
+For abstract groups \(a,b\), aggregate transition mass from members:
 
 $$
 \hat{P}_{ab} \propto \sum_{i:\phi(i)=a}\sum_{j:\phi(j)=b} \hat{P}(j\mid i)

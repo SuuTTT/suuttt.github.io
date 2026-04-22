@@ -48,5 +48,13 @@ theme = 'blowfish'
   [markup.goldmark]
     [markup.goldmark.renderer]
       unsafe = true # Allows embedding PDFs/HTML
+    [markup.goldmark.extensions]
+      [markup.goldmark.extensions.passthrough]
+        enable = true
+        [markup.goldmark.extensions.passthrough.delimiters]
+          block = [['\[', '\]'], ['$$', '$$']]
+          inline = [['\(', '\)']]
   [markup.highlight]
     noClasses = false
+
+    

@@ -4,6 +4,8 @@ date: 2026-04-22
 description: "A reader-friendly, implementation-grounded introduction to the SIDM framework from the original paper to the public code."
 layout: "post"
 showTableOfContents: true
+math: true
+katex: true
 ---
 
 > A reader-friendly, implementation-grounded introduction to the SIDM framework from the original paper to the public code.

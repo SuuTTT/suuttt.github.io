@@ -68,11 +68,11 @@ This “graph clustering -> abstraction -> policy optimization” view is the mo
 Below are the main theory ingredients you need to read the paper quickly, with simple interpretations.
 
 #### (a) RL objective (control goal)
-
+<div>
 $$
 J(\pi) = \mathbb{E}_{\tau \sim \pi}\left[\sum_{t=0}^{T}\gamma^t r_t\right]
 $$
-
+</div>
 Meaning:
 - maximize expected discounted return,
 - all SIDM abstractions are in service of improving this base control objective.

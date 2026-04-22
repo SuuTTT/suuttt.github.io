@@ -69,9 +69,9 @@ Below are the main theory ingredients you need to read the paper quickly, with s
 
 #### (a) RL objective (control goal)
 
-\[
+$$
 J(\pi) = \mathbb{E}_{\tau \sim \pi}\left[\sum_{t=0}^{T}\gamma^t r_t\right]
-\]
+$$
 
 Meaning:
 - maximize expected discounted return,
@@ -79,11 +79,11 @@ Meaning:
 
 #### (b) Empirical transition graph from trajectories
 
-Let \(N_{ij}\) be how many times we observe transition \(i \to j\) in data.
+Let $N_{ij}$ be how many times we observe transition $i \to j$ in data.
 
-\[
+$$
 \hat{P}(j \mid i) = \frac{N_{ij}}{\sum_k N_{ik}}
-\]
+$$
 
 Meaning:
 - build a directed graph from trajectory counts,
@@ -93,23 +93,23 @@ This is the practical bridge from raw trajectories to graph-structured abstracti
 
 #### (c) Graph clustering / abstraction mapping
 
-Define an assignment \(z_i \in \{1,\dots,K\}\) that maps original state node \(i\) to abstract cluster/community \(z_i\).
+Define an assignment $z_i \in \{1,\dots,K\}$ that maps original state node $i$ to abstract cluster/community $z_i$.
 
-\[
+$$
 \phi(i) = z_i
-\]
+$$
 
 Meaning:
-- \(\phi\) is the abstraction map,
+- $\phi$ is the abstraction map,
 - SIDM methods differ mainly in how they estimate/refine this map from graph structure.
 
 #### (d) Aggregate transition between abstract states
 
-For abstract groups \(a,b\), aggregate transition mass from members:
+For abstract groups $a,b$, aggregate transition mass from members:
 
-\[
+$$
 \hat{P}_{ab} \propto \sum_{i:\phi(i)=a}\sum_{j:\phi(j)=b} \hat{P}(j\mid i)
-\]
+$$
 
 Meaning:
 - collapse a large fine-grained graph into a smaller abstract graph,
@@ -119,9 +119,9 @@ Meaning:
 
 Paper-level intuition can be summarized as:
 
-\[
+$$
 \text{Total objective} \approx \text{RL control loss} + \lambda \cdot \text{structure/abstraction regularization}
-\]
+$$
 
 Meaning:
 - keep solving RL,

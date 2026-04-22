@@ -187,12 +187,12 @@ In practice, the implementation splits by baseline/task ecosystem:
 
 ## 4) SISA track (RAD/CURL + SI) in depth
 
-## 4.1 What SISA is essentially doing
+### 4.1 What SISA is essentially doing
 
 **Essence:** SISA is **model-free SAC control + SI-driven latent shaping**.
 It does not replace the control algorithm; it regularizes the representation with structure-aware losses.
 
-## 4.2 SISA pipeline figure
+### 4.2 SISA pipeline figure
 
 ```text
 obs -> encoder -> actor/critic (SAC) ---------------------> action
@@ -202,14 +202,14 @@ obs -> encoder -> actor/critic (SAC) ---------------------> action
         +--> [SI] abstract loss (transition/action/reward graphs)
 ```
 
-## 4.3 SISA phase schedule
+### 4.3 SISA phase schedule
 
 - frequent base SI-pretrain updates,
 - periodic SI updates switch from `finetune` (early) to `abstract` (later).
 
 This is a staged multi-objective curriculum over shared encoder parameters.
 
-## 4.4 Graph building in SISA (with concrete mini-example)
+### 4.4 Graph building in SISA (with concrete mini-example)
 
 Each `abstract_sisa` call builds partition-level graphs from the current minibatch pairings.
 
@@ -234,12 +234,12 @@ These graphs are rebuilt every call (batch-local, online estimates).
 
 ## 5) SISL track (ReSkill-style + SI) in depth
 
-## 5.1 What SISL is essentially doing
+### 5.1 What SISL is essentially doing
 
 **Essence:** SISL is **hierarchical skill RL with SI-augmented context features**.
 It mostly keeps the ReSkill control architecture, but changes what information the modules consume.
 
-## 5.2 SISL pipeline figure
+### 5.2 SISL pipeline figure
 
 ```text
 Stage A: demos ----------------------------------------------+
@@ -256,7 +256,7 @@ high-level policy ----> latent skill ----> decoder action ----+--> env
 
 `[SI]` marks SIDM-added abstraction path.
 
-## 5.3 Graph building in SISL (with concrete mini-example)
+### 5.3 Graph building in SISL (with concrete mini-example)
 
 SISL graph construction has two layers:
 
@@ -296,7 +296,7 @@ So a better label is:
 
 ## 7) Reproducible specification (appendix)
 
-## A. SISA reproducible spec
+### A. SISA reproducible spec
 
 Inputs:
 - replay transitions `(obs, action, reward, next_obs, done)`.
@@ -315,7 +315,7 @@ Per update:
 Inference:
 - actor path for action selection; SI affects policy through trained representation.
 
-## B. SISL reproducible spec
+### B. SISL reproducible spec
 
 Inputs:
 - demo trajectories + online env rollouts.

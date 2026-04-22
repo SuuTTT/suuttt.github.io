@@ -8,6 +8,8 @@ math: true
 katex: true
 ---
 
+{{< katex >}}
+
 > A reader-friendly, implementation-grounded introduction to the SIDM framework from the original paper to the public code.
 
 ---
@@ -70,18 +72,16 @@ This “graph clustering -> abstraction -> policy optimization” view is the mo
 Below are the main theory ingredients you need to read the paper quickly, with simple interpretations.
 
 #### (a) RL objective (control goal)
-<div>
 $$
 J(\pi) = \mathbb{E}_{\tau \sim \pi}\left[\sum_{t=0}^{T}\gamma^t r_t\right]
 $$
-</div>
 Meaning:
 - maximize expected discounted return,
 - all SIDM abstractions are in service of improving this base control objective.
 
 #### (b) Empirical transition graph from trajectories
 
-Let $N_{ij}$ be how many times we observe transition $i \to j$ in data.
+Let \(N_{ij}\) be how many times we observe transition \(i \to j\) in data.
 
 $$
 \hat{P}(j \mid i) = \frac{N_{ij}}{\sum_k N_{ik}}
@@ -95,14 +95,14 @@ This is the practical bridge from raw trajectories to graph-structured abstracti
 
 #### (c) Graph clustering / abstraction mapping
 
-Define an assignment $z_i \in \{1,\dots,K\}$ that maps original state node $i$ to abstract cluster/community $z_i$.
+Define an assignment \(z_i \in \{1,\dots,K\}\) that maps original state node \(i\) to abstract cluster/community \(z_i\).
 
 $$
 \phi(i) = z_i
 $$
 
 Meaning:
-- $\phi$ is the abstraction map,
+- \(\phi\) is the abstraction map,
 - SIDM methods differ mainly in how they estimate/refine this map from graph structure.
 
 #### (d) Aggregate transition between abstract states

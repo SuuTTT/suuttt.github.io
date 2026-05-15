@@ -128,9 +128,13 @@ Our proof uses a reduction from the strongly NP-complete **3-PARTITION** problem
 3. Minimizing this 2D entropy naturally forces a perfect volumetric balance across the clusters, which is mathematically equivalent to solving 3-PARTITION.
 
 ### The Path Forward: Global Optimization
+
 Armed with the knowledge that HD-SE is NP-hard and greedy approaches will inevitably hit local optima, our strategy aims to bridge the gap between flat (2D) and hierarchical (HD) structural entropy dynamically. 
 
-We are building an advanced optimizer using **multilevel refinement and simulated annealing**. By performing localized, structure-aware perturbations (rather than strictly monotonic greedy merges), our optimizer can escape the local minima that trap HCSE. 
+We have implemented a **Two-Phase Hybrid Optimizer** that combines the topological robustness of Modularity with the information-theoretic precision of Structural Entropy.
+
+1.  **Phase 1: Topological Initialization (Modularity):** Structural Entropy landscapes are often "rugged" with narrow local minima (resolution traps). To escape these, we first optimize for **Modularity** (\(\alpha=0.0\)). Modularity acts as a "smooth" surrogate objective that is exceptionally effective at identifying macro-scale community structures. By starting with a Modularity-optimal partition, we provide the SE optimizer with a strong, topologically-sound initialization.
+2.  **Phase 2: Information-Theoretic Refinement (Structural Entropy):** In the second phase, we perform a constrained local-move search using **Pure Structural Entropy** (\(\alpha=1.0\)). Starting from the Phase 1 partition, the optimizer fine-tunes the cluster boundaries to minimize the uncertainty of random walks on the graph. This ensures that the final hierarchy is not just topologically dense, but information-theoretically optimal.
 
 Our next-generation framework is theoretically and empirically designed to achieve lower HD-SE scores across standard benchmarks like Cora, Citeseer, and synthetic SBMs. 
 

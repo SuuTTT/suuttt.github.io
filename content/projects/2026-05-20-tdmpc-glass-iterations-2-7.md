@@ -12,7 +12,7 @@ tags: ["tdmpc2", "glass-jax", "structural-entropy", "jax", "reinforcement-learni
 {{< katex >}}
 
 > This post is the sequel to [Phase 1b](https://suuttt.github.io/projects/2026-05-13-tdmpc-glass-phase1b/).
-> It covers seven months of iteration — ~25 experimental phases, 8 GPUs, two
+> It covers seven days of iteration — ~25 experimental phases, 8 GPUs, two
 > goals that still aren't both solved — and ends with the current best hypothesis:
 > **we've been training at 4× too low a gradient-update rate the entire time.**
 > Live dashboard: [bus-brussels-fate-performed.trycloudflare.com](https://bus-brussels-fate-performed.trycloudflare.com/)
@@ -37,111 +37,166 @@ objective is G1 without reward shaping, behaviour cloning, or environment edits.
 
 ## 2. TD-MPC-Glass internals: what μ, S, and c actually do
 
-Before the iteration history, here is the complete story of the three Glass
-vectors. This is what the `K=` number on rendered rollout videos means.
+We explain the design top-down: start from *what we want*, then show how each
+component is introduced to make it achievable.
 
-### 2.1 The latent z
+### 2.1 The goal: a transition graph over behavioural states
 
-The TD-MPC2 encoder maps every observation \(o_t \in \mathbb{R}^{15}\) to a
-512-dim latent \(z_t\) via SimNorm(V=8): the 512 dimensions are split into 8
-groups of 64, and each group is independently softmax-normalised. So \(z\) is
-not just an arbitrary vector — it looks like **8 concatenated soft histograms**,
-one per group. This geometry matters: it means \(z \cdot \mu^\top\) is a sum of
-group-wise inner products, and cosine similarity is well-defined even across
-very different observations.
+The core idea behind Glass is simple: **if we could draw a graph whose nodes
+are behavioural states and whose edges represent how often the agent moves
+between them, we could measure and minimise the structural entropy of that
+graph.** Minimising structural entropy pushes the graph toward a clear modular
+structure — a few tightly-connected clusters with sparse edges between them.
+For hopping, the ideal graph would be a clean 4-node cycle:
+push-off → takeoff → flight → landing → push-off.
 
-### 2.2 Prototypes μ — the anchor latents
+The challenge: RL observations are raw 15-dim sensor readings. There are no
+predefined "behavioural states" — we have to learn them. Everything that follows
+is the machinery for doing that.
+
+### 2.2 Prototypes μ — what an "anchor" means in deep learning
 
 \(\mu \in \mathbb{R}^{N \times d}\), \(N=16\), \(d=512\). Each row \(\mu_n\) is
-a *learnable anchor state* in the same SimNorm-shaped latent space. Think of them
-as learned "exemplars": after training, \(\mu_1\) might point toward the latent
-direction of "leg fully extended mid-hop" and \(\mu_7\) toward "knee on ground
-recovering from fall."
+a learnable vector in the latent space — a fixed reference point we call a
+**prototype** or **anchor**.
 
-**Why learn N=16 anchors instead of just K=8 clusters directly?**
-Two reasons:
+The word *anchor* has a consistent meaning across several DL contexts:
 
-1. *Computational.* Structural entropy requires building a transition graph over
-   nodes. If nodes are individual data points (batch size B=256), the graph has
-   256 nodes and \(O(B^2)\) edges per step. With N=16 prototypes the graph has
-   16 nodes always — 256× cheaper.
+- **Contrastive learning (SimCLR, MoCo)**: the anchor is the query sample;
+  other embeddings are pulled toward it (positives) or pushed away (negatives).
+- **Prototype networks (ProtoNets, SwAV, DINO)**: anchors are cluster centroids
+  — fixed or slowly-moving reference points in embedding space that the rest of
+  the data is organised around. A new datapoint is described by its distance to
+  each anchor rather than by its raw coordinates.
+- **Object detection (YOLO, Faster-RCNN)**: anchors are predefined bounding-box
+  shapes; detection is formulated as residuals from these anchors.
 
-2. *Stability.* The soft assignment matrix S (described next) maps prototypes to
-   clusters and is a **parameter** — it doesn't depend on which batch we sampled.
-   So the cluster partition is consistent across training steps and identifiable
-   post-hoc, which is why you can watch a rendered video and see a stable K= label
-   on each frame.
+In all three cases the intuition is the same: **replace an unconstrained
+continuous space with "how close am I to each reference point?"** — a much
+lower-dimensional and more structured description.
 
-During training, each latent \(z_t\) is "assigned" to prototypes via a soft
-cosine similarity:
+In Glass, the anchors \(\mu_1 \ldots \mu_{16}\) are the behavioural reference
+points. After training, one anchor might point in the latent direction of "leg
+fully extended mid-hop," another toward "knee on ground recovering from a fall."
+Every current observation is then described as a soft mixture over these 16
+anchors via the assignment vector \(c_t\) — and *that* compact description is
+what we use to build the transition graph.
+
+**Why N=16 anchors instead of K=8 clusters directly?** Two reasons:
+
+1. *Graph size.* Building a transition graph directly over data points requires
+   a B×B matrix per batch (B=256) — \(O(B^2)\) per step. With N=16 anchors
+   the graph is always 16×16 — constant cost, 256× smaller.
+
+2. *Parameter stability.* The mapping from anchors to clusters (matrix S,
+   described below) is a learnable parameter, not a function of the current
+   batch. The cluster partition is therefore consistent across training steps
+   and identifiable post-hoc. This is why you can watch a rollout video and
+   see a stable `K=` label per frame.
+
+### 2.3 The latent z and SimNorm(V=8)
+
+The TD-MPC2 encoder maps every observation \(o_t\) to a 512-dim latent \(z_t\)
+using **SimNorm(V=8)** as the final activation.
+
+Standard normalisation choices and why they don't quite work here:
+- *BatchNorm / LayerNorm*: normalise to zero mean and unit variance — addresses
+  covariate shift but the latent can still collapse to a low-rank subspace
+  (well-documented in RL: [Nikishin et al., 2022](https://arxiv.org/abs/2205.07802)).
+- *L2 normalisation*: projects everything to the unit sphere — used in
+  contrastive learning but loses magnitude information and can saturate gradients
+  through long dynamics rollouts.
+
+SimNorm's approach: **split the 512 dimensions into V=8 groups of 64, then apply
+softmax within each group.** Each group becomes a proper probability distribution
+over 64 "codes." The result is that \(z\) looks like 8 concatenated soft
+histograms:
 
 \[
-c_{t,n} = \frac{\exp\!\bigl(-\|z_t - \mu_n\|^2_{\text{cos}} / \tau_p\bigr)}{\sum_{n'} \exp\!\bigl(-\|z_{t} - \mu_{n'}\|^2_{\text{cos}} / \tau_p\bigr)}
+z = \bigl[\,\text{softmax}(z^{(1)})\,,\; \text{softmax}(z^{(2)})\,,\; \ldots\,,\; \text{softmax}(z^{(8)})\,\bigr]
 \]
 
-This is the **soft assignment vector** \(c_t \in \Delta^{N-1}\): an N-dimensional
-probability distribution over which prototype the current latent "belongs to."
-Temperature \(\tau_p = 0.2\) makes this fairly peaked — one prototype dominates.
+**Why this helps:**
+1. *No collapse.* Softmax is bounded in \((0,1)\) and sums to 1 per group — the
+   representation can never degenerate to a zero vector or collapse to a single
+   active dimension, which kills RL training.
+2. *Well-defined cosine similarity.* Because every group is on the probability
+   simplex, the inner product \(z \cdot \mu^\top\) is a sum of 8 group-wise dot
+   products with a consistent scale. Cosine similarity to the anchor prototypes
+   is well-behaved from the first step.
+3. *Implicit group structure.* Each of the 8 groups can specialise
+   independently — one group might encode body orientation, another joint
+   velocities, another contact state — without any explicit supervision.
 
-### 2.3 The transition graph A
+### 2.4 Soft assignment c — mapping latents to anchors
 
-Over a replay batch of B=256 transition pairs \((z_t, z_{t+1})\), Glass builds
-a soft transition count matrix:
+Given the current latent \(z_t\) and the N=16 anchor prototypes \(\mu\), the
+soft assignment vector \(c_t \in \Delta^{N-1}\) is:
+
+\[
+c_{t,n} = \frac{\exp\!\bigl(\hat{z}_t \cdot \hat{\mu}_n / \tau_p\bigr)}{\sum_{n'} \exp\!\bigl(\hat{z}_t \cdot \hat{\mu}_{n'} / \tau_p\bigr)}
+\]
+
+where \(\hat{z}, \hat{\mu}\) denote unit-normalised vectors (cosine similarity),
+and \(\tau_p = 0.2\) is the temperature. A low temperature makes \(c_t\) sharply
+peaked: one anchor dominates, and the assignment behaves like a soft nearest-
+neighbour lookup. The entry \(c_{t,n}\) answers: *how much does the current
+observation resemble anchor \(\mu_n\)?*
+
+### 2.5 Building the transition graph A
+
+Now we have a compact description of each state: instead of a raw 15-dim
+observation we have a 16-dim soft assignment vector. We accumulate these over
+a replay batch of B=256 consecutive transition pairs \((z_t, z_{t+1})\):
 
 \[
 P_{\text{counts}} = \sum_{t=1}^{B} c_t \otimes c_{t+1} \in \mathbb{R}^{N \times N}
 \]
 
-Row-normalise and symmetrise:
+The outer product \(c_t \otimes c_{t+1}\) distributes the probability mass of
+the current state across all anchor pairs. Row-normalise and symmetrise:
 
 \[
-A = \tfrac{1}{2}(P + P^\top), \quad P = \text{row\_norm}(P_{\text{counts}} + \epsilon)
+P = \text{row\_norm}(P_{\text{counts}} + \epsilon), \qquad
+A = \tfrac{1}{2}(P + P^\top)
 \]
 
-**A is the prototype transition graph**: entry \(A_{mn}\) says "how often does
-the agent transition from a state near prototype \(\mu_m\) to one near prototype
-\(\mu_n\)?" A good hop policy should produce a cyclic graph over 4 nodes
-(push-off → takeoff → flight → landing → push-off). A kneeling policy produces
-a 2-node oscillator.
+**A is the prototype transition graph** we set out to build in §2.1. Entry
+\(A_{mn}\) records how often the agent moves from a state near anchor \(\mu_m\)
+to one near anchor \(\mu_n\). For a good hopper this graph should look like a
+sparse 4-cycle; for a kneeling policy it looks like a 2-node oscillator.
 
-### 2.4 Cluster assignment S and the structural entropy loss
+### 2.6 Cluster assignment S — coarsening anchors into behavioural phases
+
+N=16 anchors is more granularity than needed for a 4-phase gait. We coarsen them
+into K=8 clusters via a learnable matrix:
 
 \[
-S = \text{softmax}(\text{assign\_logits}, \,\text{axis}=1) \in \mathbb{R}^{N \times K}
+S = \text{softmax}(\text{assign\_logits},\; \text{axis}=1) \in \mathbb{R}^{N \times K}
 \]
 
-\(S_{nk}\) is the probability that prototype \(n\) belongs to cluster \(k\).
-In well-trained Glass, each row is near one-hot — each prototype belongs to one
-behavioural cluster. The K=8 clusters are a *coarsening* of the N=16 prototypes:
-a two-level hierarchy where prototypes capture fine-grained state variation and
-clusters capture coarse behavioural phases.
+\(S_{nk}\) is the probability that anchor \(n\) belongs to cluster \(k\). In
+well-trained Glass, each row is near one-hot. This is a two-level hierarchy:
+anchors capture fine-grained variation (is the knee slightly more bent here?),
+clusters capture coarse behavioural phases (is this "stance" or "flight"?).
 
-The auxiliary loss Glass adds to TD-MPC2 is the **2D structural entropy** of the
-transition graph A under the partition S:
+### 2.7 Structural entropy loss
+
+With the transition graph A and the cluster partition S in hand, Glass minimises
+the **2D structural entropy**:
 
 \[
-H^2(A; S) = -\sum_{k=1}^{K} p_{\text{cut},k} \log p_{\text{vol},k}
+H^2(A;\,S) = -\sum_{k=1}^{K} p_{\text{cut},k} \log p_{\text{vol},k}
            + H^1(A) + \sum_{k=1}^K p_{\text{vol},k} \log p_{\text{vol},k}
 \]
 
-where (in the differentiable soft form):
+where \(p_{\text{vol},k} = V_k / \text{vol}(A)\) is the volume fraction of
+cluster \(k\) and \(p_{\text{cut},k} = g_k / \text{vol}(A)\) is the fraction
+of edges that cross out of cluster \(k\). Minimising this pushes toward **small
+boundary cuts** (transitions stay within clusters) and **balanced volumes** (no
+dead clusters) — exactly the pressure to align clusters with gait phases.
 
-\[
-d = A\mathbf{1}, \quad V = S^\top d \in \mathbb{R}^K, \quad
-p_{\text{vol},k} = V_k / \text{vol}(A)
-\]
-\[
-g_k = \sum_n S_{nk}\,(d_n - (AS)_{nk}), \quad
-p_{\text{cut},k} = g_k / \text{vol}(A)
-\]
-
-Minimising \(H^2\) pushes the partition to have **small boundary cuts** (transitions
-stay within clusters) and **balanced cluster volumes** (no dead clusters). This is
-exactly the pressure to align clusters with gait phases: if push-off and landing
-always co-occur in the same trajectory segment, the min-cut partition will group
-their prototypes together.
-
-The full Glass loss added on top of TD-MPC2:
+The full Glass loss:
 
 \[
 \mathcal{L} = \mathcal{L}_{\text{TD-MPC2}}
@@ -150,22 +205,22 @@ The full Glass loss added on top of TD-MPC2:
             + \lambda_{\text{temp}} \cdot \mathcal{L}_{\text{temporal}}
 \]
 
-Current defaults: \(\lambda_{\text{SE}} = 10^{-4}\), \(\lambda_{\text{bal}} = 10^{-3}\), \(\lambda_{\text{temp}} = 10^{-4}\).
+Defaults: \(\lambda_{\text{SE}} = 10^{-4}\), \(\lambda_{\text{bal}} = 10^{-3}\), \(\lambda_{\text{temp}} = 10^{-4}\).
 
-### 2.5 The K= label in rollout videos
+### 2.8 The K= label in rollout videos
 
-When watching a rendered MP4, the overlay number comes from:
+The overlay number on each rendered frame is:
 
 ```
 argmax(S[argmax(z · μᵀ)])
 ```
 
-Step by step:
-1. Compute cosine similarities \(\text{sim}_n = \hat{z} \cdot \hat{\mu}_n\) (unit-normalised, \(T=0.7\)).
-2. `n_star = argmax(sim)` — the nearest prototype.
-3. `cluster_id = argmax(S[n_star])` — which cluster that prototype belongs to.
+1. Compute cosine similarities to each anchor: \(\text{sim}_n = \hat{z} \cdot \hat{\mu}_n\).
+2. `n_star = argmax(sim)` — the nearest anchor.
+3. `cluster_id = argmax(S[n_star])` — which cluster that anchor belongs to.
 
-This is the hard-assignment label of the prototype the agent is currently visiting.
+In plain English: *which behavioural cluster does the current observation most
+resemble, according to the encoder and Glass partition?*
 
 ---
 
@@ -561,3 +616,147 @@ seed 4 specifically — it is the clearest test of whether basin entry is
 determined by gradient quality or by initialisation alone. The Phase-aa results
 so far show k64 seed 1 stuck at 234 while k128 seed 1 reached 538 — exactly the
 basin-escape pattern. Whether seed 4 also escapes under k128 will be decisive.
+
+---
+
+## 10. Brainstorm: how to actually fix Glass
+
+The diagnosis from §3 and §5 is clear: Glass finds a good partition of whatever
+gait the policy learned, but it does not push the policy toward a better gait,
+and it does not enforce that the same behavioural phase maps to the same cluster
+across time. Here are concrete directions, roughly ordered by expected cost and
+risk.
+
+### 10.1 Fix the training ratio first (K_UPDATE=128, currently running)
+
+Before any architectural change, verify that the stuck-seed rate drops at
+K_UPDATE=128. If it does, every previous Glass experiment was under-trained and
+the comparison is invalid. Re-run Phase-ac (Glass vs. vanilla at the same
+K_UPDATE) before spending GPU time on any of the ideas below.
+
+### 10.2 Temporal assignment consistency loss
+
+**Problem**: the SE loss minimises cut edges in the *aggregate* graph, but a
+single anchor can be visited at both knee-walk and hop phases without penalty —
+only the average transition pattern matters.
+
+**Fix**: add a loss that penalises the entropy of the assignment distribution
+within a short sliding window \(W\) of consecutive frames:
+
+\[
+\mathcal{L}_{\text{window}} = \mathbb{E}_t\!\Bigl[
+  H\!\Bigl(\tfrac{1}{W}\textstyle\sum_{\tau=t}^{t+W} c_\tau\Bigr)
+  - \tfrac{1}{W}\textstyle\sum_{\tau=t}^{t+W} H(c_\tau)
+\Bigr]
+\]
+
+This is the mutual information between time index and anchor assignment inside
+the window. Minimising it forces *the same anchor to dominate throughout a gait
+phase*, not just on average. W=5–10 env steps should cover one hop phase (~0.2 s
+at 50 Hz). Cost: one extra scan over the rollout buffer, no new parameters.
+
+### 10.3 Phase-contrastive loss on assignments (not on latents)
+
+**Problem**: contrastive losses applied directly to \(z\) (e.g. BYOL, SimCLR)
+have been tried in RL and do not reliably help. Applying them to the soft
+assignment vector \(c_t\) instead is cheaper and more semantically targeted.
+
+**Fix**: positive pairs = two frames within the same gait phase (consecutive
+frames during steady-state motion); negatives = frames from different phases
+or different episodes. NT-Xent on \(c_t\):
+
+\[
+\mathcal{L}_{\text{phase-con}} = -\log \frac{\exp(c_t \cdot c_{t'}^+ / \tau)}
+{\exp(c_t \cdot c_{t'}^+ / \tau) + \sum_j \exp(c_t \cdot c_j^- / \tau)}
+\]
+
+This directly trains the anchor assignments to be phase-consistent without
+constraining the latent geometry. The tricky part is defining positive pairs
+without ground-truth gait labels — one proxy: two frames are "same phase" if
+their contact state (foot on ground vs. not) matches, which is available from
+the MuJoCo state.
+
+### 10.4 Reduce N and K to match the known gait structure
+
+**Problem**: N=16 anchors and K=8 clusters give the SE loss 16×8 degrees of
+freedom to fill. Only 4 of the 8 clusters are active in winning seeds; the other
+4 are wasted capacity that can absorb arbitrary patterns.
+
+**Fix**: set N=4, K=4 to directly match the 4-phase hop cycle. This forces the
+two-level hierarchy to compress to gait phases. If the encoder can only describe
+a latent as a mixture of 4 anchors, and the anchors must be grouped into 4
+clusters with small SE, the partition *has* to align with the dominant
+behavioural structure. Risk: losing fine-grained within-phase discrimination.
+Mitigation: keep N=8, K=4 as a compromise (two anchors per phase, K=4 clusters).
+
+### 10.5 Prototype-conditioned Q (mixture-of-experts critic)
+
+**Problem**: MPPI plans using a single Q ensemble regardless of which gait
+phase the agent is in. A policy in the flight phase and one in the stance phase
+get identical value estimates for the same action — even though the physics are
+completely different.
+
+**Fix**: learn K=4 Q-offset vectors \(\Delta Q_k \in \mathbb{R}^{101}\) (one
+per cluster, in two-hot space). The effective Q is:
+
+\[
+Q_{\text{eff}}(z, a) = Q_{\text{base}}(z, a) + \sum_k \bar{S}_k(z)\,\Delta Q_k
+\]
+
+where \(\bar{S}_k(z) = \sum_n c_{t,n} S_{nk}\) is the soft cluster membership.
+This is a mixture-of-experts critic with Glass as the router, adding only
+\(K \times 101 \approx 400\) parameters — negligible. The planner can then
+optimise actions conditional on which gait phase it expects to be in.
+
+### 10.6 Early basin detection and restart
+
+**Problem**: basin lock happens in the first 200k steps. If we could detect at
+200k that a seed entered K=3, we could restart it with a different random seed
+for the exploration phase only.
+
+**Implementation**: monitor the number of active prototypes (Glass diagnostic:
+`active`) at step 200k. If `active < 4` (K=3 basin), kill and restart with
+`seed += 100`. This is not a change to the algorithm — it is a training
+curriculum that selects for K=4 initial conditions. Benchmark-fair because
+evaluation is still on the original reward.
+Cost: at most 2–3 restarts per seed (< 600k extra env steps total).
+
+### 10.7 Anchor initialisation from exploration trajectories
+
+**Problem**: anchors initialise randomly (SimNorm-shaped noise). The first 100k
+gradient updates spend time moving anchors from random positions to meaningful
+latent directions, delaying basin lock.
+
+**Fix**: after the initial EXPL_UNTIL=500k random phase, run one pass over the
+replay buffer, cluster the latents with k-means (k=16), and use the cluster
+centroids as the initial \(\mu\). Glass then starts from semantically grounded
+anchors rather than noise. The SE loss can immediately act on a meaningful graph
+instead of spending 200k steps bootstrapping anchor positions.
+
+### 10.8 Multi-task pre-training to force generic gait representations
+
+**Problem**: Glass trained on HopperHop alone can represent a knee-walk gait
+perfectly well — there's no pressure to learn a hopping gait from the structure
+alone.
+
+**Fix**: jointly train on HopperHop + HopperStand. The shared Glass partition
+must now describe both tasks' state spaces. A knee-walk cluster that works for
+HopperHop must also be consistent with HopperStand's standing states — which
+are physically orthogonal. This cross-task pressure may force the partition toward
+anatomically grounded clusters (joint angles, contact states) rather than
+task-specific gaits. Risk: the shared partition might just grow larger rather
+than become more meaningful. Mitigation: use task-specific heads with shared
+encoder + Glass partition.
+
+### Summary
+
+| Idea | Params added | GPU cost | Risk | Priority |
+|------|-------------|----------|------|----------|
+| 10.1 K_UPDATE=128 | 0 | running now | low | **now** |
+| 10.2 Window consistency | 0 | +5% | low | high |
+| 10.6 Basin detection + restart | 0 | +10% | low | high |
+| 10.7 Anchor init from k-means | 0 | +1% | low | medium |
+| 10.4 N=8/K=4 reduction | −50% params | neutral | medium | medium |
+| 10.3 Phase-contrastive | 0 | +10% | medium | medium |
+| 10.5 Mixture-of-experts Q | +400 params | +5% | low | medium |
+| 10.8 Multi-task pre-training | 0 | 2× data | high | low |

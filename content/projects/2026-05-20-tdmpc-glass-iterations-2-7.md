@@ -226,55 +226,90 @@ resemble, according to the encoder and Glass partition?*
 
 ## 3. What the rollout videos revealed
 
-We rendered Phase-f seeds 1, 3, 4 (best_mppi.pkl) and overlaid the K= label.
+We have video rollouts for Phase-f seeds 1, 3, 4 and the best-ever checkpoint
+Phase-t seed 2 (MPPI 612). K= is overlaid per frame.
 
-### Seed 1 — winner (MPPI 571)
+### Phase-t seed 2 — G2 winner (MPPI 612) — the most important video
 
-The K= label cycles **3 → 4 → 3 → 4 → ...** during steady hopping, with 6 and 7
-appearing only during recovery from a fall. The mapping:
+This is the highest-scoring checkpoint we've ever produced. The K= behaviour is
+strikingly simple:
 
-| Cluster | Gait phase |
-|---------|-----------|
+| Episode phase | K= value |
+|---------------|----------|
+| Initial drop (hopper spawns and falls to ground) | K=A (one cluster) |
+| **Entire steady-state hop — all jumps, all frames** | **K=B (one cluster, UNCHANGED)** |
+
+Two clusters in total. K does **not** switch between push-off and takeoff, does
+not switch mid-flight, does not flicker. The entire hopping motion — from the
+first jump to the last — is described by a single stable cluster assignment.
+
+This is the strongest video finding of the project. The best policy we have
+ever produced uses the **simplest possible cluster structure**: one state for
+"I am falling / recovering", one state for "I am hopping". No sub-phase
+discrimination, no 4-state gait machine. Just a binary: falling vs. hopping.
+
+### Phase-f seed 1 — secondary winner (MPPI 571)
+
+The K= label alternates **K=3 → K=4 → K=3 → K=4** during the hop cycle, with
+K=6 and K=7 appearing only during fall recovery. Within the steady hop,
+K switches once per jump — K=3 during push-off, K=4 during takeoff.
+
+| Cluster | Gait sub-phase |
+|---------|---------------|
 | K=3 | Hip leaves ground / push-off |
 | K=4 | Leg extending, mid-takeoff |
-| K=6 | Air-recovery (post-fall) |
-| K=7 | Head/ground contact recovery |
+| K=6 | Air-recovery (post-fall only) |
+| K=7 | Ground-contact recovery (post-fall only) |
 
-This is exactly what a 4-state gait machine should look like. **Glass found a
-meaningful partition aligned with the hop cycle.**
+This is more granular than the 612 winner — 2 clusters within the hop, not 1.
+And the score is lower (571 vs 612). **More cluster detail during hopping does
+not improve performance.**
 
-### Seed 3 — stuck (MPPI 262)
+### Phase-f seed 3 — stuck (MPPI 262)
 
-The K= label cycles **2 → 4 → 5 → 1 → 4 → 2**, 5 clusters active. Glass also found a
-rich partition here — but the *behaviour* is a **knee-walk with nose dragging the
-ground**. A latent partition that accurately describes kneeling is not useful for hopping.
+K cycles **2 → 4 → 5 → 1 → 4 → 2** with 5 distinct clusters active. The
+behaviour is a knee-walk with nose dragging the ground. Glass found a rich
+partition of the kneeling gait — but a rich partition of the wrong gait is useless.
 
-**Conclusion: the bottleneck is downstream (policy/critic), not the representation.**
-Seed 3 has healthy Glass geometry but converged to the wrong gait technique.
+### Phase-f seed 4 — stuck (MPPI 266)
 
-### Seed 4 — K=3 basin (MPPI 266)
+Only 2 clusters active (K=0 ↔ K=5), oscillating once per knee-walk cycle. This
+looks superficially like the 612 winner (2 clusters, stable oscillation) — but
+the gait is completely different: "knee on ground" vs "knee-thrust off ground",
+not "falling" vs "hopping". **The cluster count alone does not predict performance;
+what the clusters represent does.**
 
-Only **2 clusters active** (K=0 ↔ K=5) throughout. The Glass partition has 3
-entries (K=3 basin) but the policy collapses two of them into "knee on ground."
-This is the structural cap we labeled the K=3 basin: it lacks the fourth
-behavioural primitive (foot-in-flight) needed for real hopping.
+### The revised key insight: stability, not count
 
-### The key observation about K stability
+Comparing all four rollouts side by side:
 
-The best policies — both Phase-f seed-1 (571) and Phase-t seed-2 (612, knee-penalty)
-— share a striking property: **K= does not change during the steady-state hop cycle**.
-Seed-1 uses exactly K=3 during push-off and K=4 during takeoff, consistently,
-for 7 consecutive hops. The cluster assignment is *locked* to the gait phase.
+| Checkpoint | MPPI | Active K | K during hop | Verdict |
+|------------|------|----------|--------------|---------|
+| Phase-t s2 | **612** | 2 | **One stable K throughout** | G2 winner |
+| Phase-f s1 | 571 | 4–5 | K=3/K=4 alternating per sub-phase | Winner |
+| Phase-f s4 | 266 | 2 | K=0/K=5 oscillating (knee-walk) | Stuck |
+| Phase-f s3 | 262 | 5 | Rapid switching (knee-walk) | Stuck |
 
-Stuck seeds show the opposite: K= oscillates even within a single gait phase.
-Seed-3's K=2 → 4 → 5 → 1 within one "knee-walk" cycle means the encoder is
-*not* finding stable behavioural anchors — the representation is changing faster
-than the gait.
+The ranking by MPPI is **inversely correlated with cluster complexity during
+the active gait phase.** The 612 winner uses 1 cluster for hopping; the 571
+winner uses 2; the stuck seeds use 2–5 for kneeling.
 
-**This is the core failure mode.** Glass's structural entropy loss pushes prototypes
-to form a good partition of the transition graph, but it does not enforce temporal
-stability of the assignment. A prototype can be visited at a knee-walk phase and
-also at a hop phase, breaking the gait alignment.
+**The "K=4 basin is needed for hopping" hypothesis is falsified.** The
+best-ever checkpoint uses 2 clusters total. The K=3 vs K=4 basin distinction
+we tracked across iterations was measuring cluster *count* — but the real
+predictor is cluster *stability within the active gait phase*.
+
+**What the stuck seeds lack is not cluster count — it is that their cluster
+assignment oscillates within a single gait phase.** Seed 3 switches K five times
+per knee-walk cycle; seed 4 switches once per cycle but for the wrong gait.
+Neither case is "stable on hopping", because neither is hopping.
+
+**The core failure mode:** Glass's SE loss minimises boundary cuts in the
+*aggregate* transition graph, which encourages Markovian cluster structure on
+average. But it does not enforce that **the same cluster fires throughout a
+repeated gait phase** across time. The 612 winner learned this temporal stability
+by accident (or through the knee-penalty shaping gradient). The stuck seeds
+never did.
 
 ---
 
@@ -394,19 +429,38 @@ Glass does find meaningful partitions. The video analysis confirms:
 Glass is doing structurally correct representation learning. The problem is that
 **a good representation of the wrong gait is useless.**
 
-### 5.2 The stability problem
+### 5.2 The stability problem — and why cluster count is a red herring
 
-The key observation from the videos: the best-performing seed (571, seed-1) has
-**K= stable within each gait phase**. Push-off is always K=3; takeoff is always K=4.
-In contrast, stuck seeds show K= changing within a single gait phase — the
-encoder is not finding stable temporal anchors.
+The video analysis (§3) forces a revision of our working hypothesis.
 
-Glass's structural entropy loss minimises cross-community boundary cuts on the
-transition graph, which encourages *Markovian* cluster structure — but it does not
-explicitly encourage cluster assignment to be **temporally stable within a single
-gait phase**. A latent can visit prototype A during one push-off and prototype B
-during the next push-off, and the SE loss will not penalise this if both A and B
-belong to the same cluster.
+**Old hypothesis**: K=4 basin → good (4 gait phases → 4 clusters → hopping).
+K=3 basin → structural cap (~310 average).
+
+**New evidence**: the 612 winner (Phase-t s2) uses **2 clusters total** — one
+for falling, one for the entire hop. It doesn't distinguish push-off from
+takeoff, flight from landing. The 571 winner (Phase-f s1) uses 2 clusters
+*within* the hop (K=3 push-off, K=4 takeoff). The 612 winner is more abstract
+and scores higher.
+
+**Revised diagnosis**: what distinguishes winners from stuck seeds is not the
+number of active clusters but **whether the cluster assignment is stable
+throughout the active gait phase**. The 612 winner has K frozen on a single
+value for every frame of every hop. The stuck seeds have K oscillating within
+a single kneeling cycle.
+
+This reframes the problem entirely. We don't need Glass to learn a 4-state gait
+machine. We need it to learn a **stable binary abstraction**: "hopping" and
+"not hopping". Any number of clusters works, as long as the cluster that fires
+during the hop phase stays fixed across all frames of all hops.
+
+Glass's structural entropy loss minimises boundary cuts in the *aggregate*
+transition graph — it encourages Markovian cluster structure on average over
+a replay batch. But it does not enforce that **the same cluster fires
+consistently throughout a single repeated gait phase across time**. A latent
+can visit prototype A during one push-off and prototype B during the next
+push-off, and the SE loss will not penalise this as long as both A and B belong
+to the same cluster in S. The 612 winner achieved stability without this
+being explicitly trained — the stuck seeds did not.
 
 ### 5.3 Proposed Glass integration directions
 
@@ -438,12 +492,15 @@ This directly trains the prototype assignments to be consistent within a phase
 and discriminative across phases — exactly the property the winning seed exhibits
 but the stuck seeds don't.
 
-**Direction 3: Coarser prototype count matched to known gait phases**
+**Direction 3: Coarser cluster count — but matched to stability, not gait sub-phases**
 
-Reduce N=16 → N=4 and K=8 → K=4 to match the 4-phase hop cycle. The current
-N=16/K=8 setup leaves 12+ unused capacity that the SE loss can fill with
-arbitrary partitions. Constraining to N=4 forces the two argmaxes to compress
-directly to gait phases, at the cost of losing within-phase granularity.
+The 612 winner used 2 stable clusters (fall / hop). Reducing to N=4, K=2 would
+force Glass toward exactly this binary abstraction. This is a *different*
+motivation from matching "4 gait sub-phases" — the video evidence shows the
+best result doesn't distinguish sub-phases at all. Reducing K=8 → K=2 or K=3
+removes the capacity for fine-grained sub-phase tracking, which has not helped
+and may be actively harmful by giving the SE loss too many degrees of freedom
+to fill with arbitrary, low-stability partitions.
 
 **Direction 4: Prototype-conditioned planning in MPPI**
 
@@ -578,17 +635,30 @@ confirmed this across 25 phases and every architectural intervention we tried.
 
 ### 9.4 The basin lottery in concrete terms
 
-From the video analysis (§3), there are two main basin types:
+Earlier analysis described two basin types (K=3 vs K=4) with K=4 being necessary
+for hopping. The Phase-t seed 2 video falsifies this: the 612 winner uses only
+2 stable clusters and outperforms all K=4-basin seeds.
 
-**K=4 basin** — the encoder allocates 4 active behavioural clusters. This gives
-the policy a vocabulary of: push-off / takeoff / flight / landing. Seeds that
-land here have the representational capacity for real hopping and regularly reach
-MPPI > 500.
+The revised picture has two basin types defined by **cluster stability**, not count:
 
-**K=3 basin** — only 3 clusters active. The policy is structurally capped at
-~310 average because it never develops a dedicated "flight" cluster. It learns
-knee-walk gaits instead. Phase-f seeds 4 and 5 were both K=3. Phase-f seed 1
-was K=4 — that is the 571 winner.
+**Stable-hop basin** — the cluster assignment locks onto a single K value for
+the entire hopping phase, regardless of how many clusters are nominally active.
+The encoder has found a representation where "hopping" is one coherent region of
+latent space. Phase-t s2 (612) and Phase-f s1 (571) are both in this basin,
+though s1 uses 2 sub-clusters within the hop.
+
+**Unstable basin** — the cluster assignment oscillates within a single gait
+phase, either because the gait is wrong (knee-walk, seeds 3 and 4 in Phase-f)
+or because the representation hasn't found a stable "hopping" region. Seeds in
+this basin are stuck regardless of cluster count: Phase-f s3 had 5 active
+clusters and scored 262; Phase-f s4 had 2 active clusters and scored 266.
+
+What determines which basin a seed enters: the same three factors as before
+(initial weights, exploration trajectory, MPPI noise) — but the quantity being
+determined is **whether the early policy finds a foot-hop gait at all**, not
+whether it allocates 3 or 4 clusters. If it finds foot-hopping early, the
+representation stabilises around it; if it finds kneeling, any number of
+clusters will describe the kneeling precisely and stably.
 
 ### 9.5 Why seed 2 is bimodal
 
@@ -634,11 +704,13 @@ K_UPDATE=128. If it does, every previous Glass experiment was under-trained and
 the comparison is invalid. Re-run Phase-ac (Glass vs. vanilla at the same
 K_UPDATE) before spending GPU time on any of the ideas below.
 
-### 10.2 Temporal assignment consistency loss
+### 10.2 Temporal assignment consistency loss ← highest priority given §3 findings
 
 **Problem**: the SE loss minimises cut edges in the *aggregate* graph, but a
 single anchor can be visited at both knee-walk and hop phases without penalty —
-only the average transition pattern matters.
+only the average transition pattern matters. The 612 winner (§3) achieved
+temporal stability without this being trained — it was emergent. The stuck seeds
+did not achieve it. This loss would make stability a first-class training objective.
 
 **Fix**: add a loss that penalises the entropy of the assignment distribution
 within a short sliding window \(W\) of consecutive frames:

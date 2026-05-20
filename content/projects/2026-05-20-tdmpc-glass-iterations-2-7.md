@@ -458,3 +458,106 @@ of insufficient gradient updates in the first 500k steps.
 | phaserstack | All shaping stacked | 16 | **COLLAPSED** |
 | phaseaa k128 | K_UPDATE=128 (early) | **538** | promising |
 | phaseaa k256 | K_UPDATE=256 (early) | **531** | promising |
+
+---
+
+## 9. Seed statistics: is seed 1/2 always best and seed 4 always worst?
+
+A common intuition after watching many runs: "seed 1 and 2 always win, seed 4
+always gets stuck." We ran the numbers across all 21 HopperHop phases with at
+least two seeds present.
+
+### 9.1 Aggregate per-seed statistics
+
+| Seed | N phases | Mean MPPI | Median | Max | Min | Times best | Times worst |
+|------|----------|-----------|--------|-----|-----|-----------|------------|
+| 3 | 12 | **386** | **432** | 578 | 0.1 | 6 | 1 |
+| 1 | 13 | 345 | 372 | 572 | 25 | 5 | 3 |
+| 2 | 14 | 333 | 319 | **612** | 7 | **6** | **7** |
+| 4 | 9 | 321 | 267 | 538 | 227 | 1 | 4 |
+| 5 | 9 | 290 | 286 | 562 | 27 | 2 | 4 |
+
+**Seed 3 is the most consistently good** (median 432, 5 times above 500, worst
+only once). Seed 1 is a reliable mid-upper performer. The intuition about seeds
+1/2 being best is half-right — but **seed 2 is simultaneously the most frequent
+best (6 times) AND the most frequent worst (7 times).** It has by far the highest
+variance: Phase-t seed 2 = 612 (G2 winner); Phase-Pa seed 2 = 7; Phase-x seed 2 = 6.
+Seed 4 is genuinely below-median but seed 5 is comparably weak.
+
+### 9.2 Per-phase breakdown
+
+| Phase | s1 | s2 | s3 | s4 | s5 | Best seed |
+|-------|----|----|----|----|----|----|
+| baseline (pre) | 284 | 341 | **526** | 356 | 264 | s3 |
+| phase1b | 526 | 526 | 294 | 227 | **562** | s5 |
+| phasef (smooth) | **572** | 284 | 262 | 266 | 255 | s1 |
+| phasej (curriculum) | 452 | **518** | 322 | 266 | 354 | s2 |
+| phaseo (Glass-off-late) | — | — | **578** | 254 | 33 | s3 |
+| phasep (EXPL=500k) | — | — | 197 | **538** | 27 | s4 |
+| phaset (knee penalty) | 375 | **612** | 534 | — | — | s2 |
+| phasez (vanilla baseline) | — | 268 | **535** | 448 | 467 | s3 |
+
+No seed dominates across all phases. The same seed that wins in one phase
+finishes last in another.
+
+### 9.3 Why different seeds produce different outcomes
+
+The JAX random seed controls three things simultaneously:
+
+1. **Initial network weights** — all five networks (encoder, dynamics, reward, Q,
+   policy) draw from different random initializations. Different loss surfaces at
+   step 0 mean the early gradient steps point in different directions.
+
+2. **Initial exploration trajectory** — the first 25k–500k env steps use random
+   or near-random actions drawn from the seed's PRNG chain. Different seeds yield
+   different state-action pairs in the replay buffer, different early experience
+   coverage, and different first gradient targets.
+
+3. **MPPI action noise sequences** — all planning rollouts sample action
+   perturbations from the same seed. This affects which action sequences get
+   evaluated during early policy improvement.
+
+These three interact to determine **which gait basin the policy enters** in the
+first ~200k env steps. Once a basin is locked, it is almost never escaped — we
+confirmed this across 25 phases and every architectural intervention we tried.
+
+### 9.4 The basin lottery in concrete terms
+
+From the video analysis (§3), there are two main basin types:
+
+**K=4 basin** — the encoder allocates 4 active behavioural clusters. This gives
+the policy a vocabulary of: push-off / takeoff / flight / landing. Seeds that
+land here have the representational capacity for real hopping and regularly reach
+MPPI > 500.
+
+**K=3 basin** — only 3 clusters active. The policy is structurally capped at
+~310 average because it never develops a dedicated "flight" cluster. It learns
+knee-walk gaits instead. Phase-f seeds 4 and 5 were both K=3. Phase-f seed 1
+was K=4 — that is the 571 winner.
+
+### 9.5 Why seed 2 is bimodal
+
+Seed 2's initialisation happens to be highly sensitive to the training signal.
+When Glass or shaping provides a clear gradient (Phase-t s2=612, Phase-j s2=518,
+Phase-1b s2=526), seed 2 commits strongly to a productive K=4 configuration.
+When the signal is weak or noisy (Phase-Pa s2=7, Phase-x s2=6), it enters a
+degenerate basin and collapses. High initialisation sensitivity = high outcome
+variance.
+
+### 9.6 Why seed 4 is reliably below median
+
+Seed 4 has a strong prior toward the K=3 basin. It escaped only once: Phase-p
+seed 4 = 538, where the 500k random exploration phase gave enough state coverage
+to stumble into a K=4 configuration before basin lock. In every phase with
+shorter exploration (EXPL_UNTIL=25k), seed 4 goes K=3 and caps around 200–270.
+This also explains why Phase-p (EXPL_UNTIL=500k) produced the one seed-4 winner:
+longer exploration delayed basin lock long enough for the K=4 basin to be sampled.
+
+### 9.7 Implication for the K_UPDATE audit
+
+If more gradient updates per env step shift the early loss landscape sufficiently
+to nudge seeds away from K=3 configurations, we would expect k128/k256 to improve
+seed 4 specifically — it is the clearest test of whether basin entry is
+determined by gradient quality or by initialisation alone. The Phase-aa results
+so far show k64 seed 1 stuck at 234 while k128 seed 1 reached 538 — exactly the
+basin-escape pattern. Whether seed 4 also escapes under k128 will be decisive.

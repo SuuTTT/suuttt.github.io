@@ -111,7 +111,7 @@ latent rollouts poorly, planning can damage the policy at test time.
 For this reason, we switched most summaries to:
 
 $$
-\mathrm{best\_any} = \max(\mathrm{best\_pi}, \mathrm{best\_MPPI})
+\text{best-any} = \max(\text{best-pi}, \text{best-MPPI})
 $$
 
 This is not a trick to inflate numbers. It is a diagnostic split:
@@ -202,10 +202,56 @@ All of the strongest variants share the same base recipe:
 | Exploration | shortened to 25k steps |
 | Glass warmup | 100k steps |
 | Prototype temperature | 0.7 |
+| Temp-stability coefficient | 0 or 0.01 depending on phase |
 | Assign-logit init scale | 0.5 |
 | Stopgrad graph | true |
 | Latent smooth | 0 |
 | Main variable | when Glass decays away |
+
+### 5.1 Two different "temps"
+
+There are two temperature-like knobs in these phases, and it is easy to mix
+them up.
+
+**Prototype temperature** is the softmax temperature used when a latent \(z_t\)
+is assigned to the \(N=16\) Glass prototypes. The assignment is:
+
+$$
+c_{t,n}
+= \frac{\exp(\operatorname{sim}(z_t,\mu_n) / \tau_p)}
+       {\sum_j \exp(\operatorname{sim}(z_t,\mu_j) / \tau_p)}
+$$
+
+where \(\tau_p\) is the prototype temperature. Lower \(\tau_p\) makes the
+assignment sharper: one prototype dominates. Higher \(\tau_p\) makes the
+assignment softer: several prototypes share probability mass. In these
+handoff phases we use \(\tau_p=0.7\), sharper than the earlier default of 1.0,
+because the useful signal seemed to come from a clearer early basin partition.
+
+**Temp-stability**, despite the name, is not this softmax temperature. It is an
+extra loss coefficient that penalizes assignment changes over adjacent latent
+states. A simplified form is:
+
+$$
+\mathcal{L}_{\text{temp-stability}}
+= \|c_t - c_{t+1}\|_2^2
+$$
+
+When a phase says `temp 0.01`, it means the coefficient on this stability loss
+is 0.01. It asks Glass to make nearby rollout states keep similar prototype
+assignments. That can reduce cluster flicker, but it can also smooth over
+important contact transitions. This is why `phasei9q` is interesting but not
+obviously superior: it keeps weak assignment-stability pressure until 2M steps,
+yet still shows high variance across seeds.
+
+The handoff experiments are therefore testing two separate claims:
+
+| Knob | What it controls | Current read |
+|---|---|---|
+| Prototype temperature \(\tau_p=0.7\) | sharpness of latent-to-prototype assignment | useful in the Phase1b handoff recipe |
+| Temp-stability coefficient 0.01 | penalty on assignment flicker over time | sometimes helps high seeds, not enough for robustness |
+
+### 5.2 Handoff schedules
 
 The tested handoff schedules:
 
@@ -241,7 +287,7 @@ The plot in the introduction is generated from the current dashboard CSVs. The
 metric is best return per seed:
 
 $$
-\max(\mathrm{best\_pi}, \mathrm{best\_MPPI})
+\max(\text{best-pi}, \text{best-MPPI})
 $$
 
 Runs are counted once they reach at least 4M steps, except early G1 runs
@@ -413,7 +459,7 @@ That explains the handoff pattern:
 
 $$
 \mathcal{L}(t) =
-\mathcal{L}_{\mathrm{TD\mbox{-}MPC2}}
+\mathcal{L}_{\text{TD-MPC2}}
 + \lambda_{\mathrm{Glass}}(t)\mathcal{L}_{\mathrm{Glass}},
 \qquad
 \lambda_{\mathrm{Glass}}(t) \to 0 \;\;\text{around 1M steps}.
@@ -448,6 +494,40 @@ The next decision rule is simple:
 | `phasei9q` improves robustness | Keep a weak temp-stability term, but only until 2M. |
 | all clean fills regress | Treat `phasei9r` as a useful but non-robust lead and return to mechanism design. |
 
+### 10.1 G2 ideas: pushing the ceiling past 600
+
+G1 is the reliability goal: every seed should reach 500. G2 is the ceiling goal:
+at least one benchmark-fair seed should clear 600 without reward shaping or
+environment edits. We have seen that the physical ceiling exists, but not yet in
+a clean Glass setting.
+
+The next G2 probes should be different from the G1 probes. G1 asks how to avoid
+bad basins; G2 asks how to exploit a good basin once one appears. Candidate
+directions:
+
+| Direction | Why it might raise G2 | Risk |
+|---|---|---|
+| Planner/actor arbitration | Use MPPI only when it beats the actor on recent evals; fall back to `pi` otherwise. | Can overfit to noisy evals if the switch is too reactive. |
+| Larger MPPI only after basin entry | Keep cheap planning early, then raise samples or horizon once reward crosses 400. | More compute and possible model exploitation. |
+| Checkpoint continuation from high-return seeds | Resume from 500+ checkpoints with lower Glass weight and tuned actor learning. | Not a fair-from-scratch method unless reported separately. |
+| Late actor-only consolidation | After Glass off, run a short actor/Q consolidation stage with planning disabled for eval. | May improve `pi` while hurting MPPI. |
+| Planner calibration loss | Penalize cases where MPPI predicts improvement but realized return is worse than `pi`. | Requires careful logging of planned vs realized outcomes. |
+| Adaptive handoff time | Turn Glass off when diagnostics show stable gait entry rather than at a fixed 1M/1.5M. | Adds another controller and can hide seed-specific tuning. |
+| Prototype-temperature anneal | Start sharp for basin separation, then soften before Glass turns off. | Too much softness may erase the useful early partition. |
+| Gait-phase diagnostic gating | Use rollout videos/cluster traces to detect "hopping mode" and trigger exploitation settings. | Video-derived rules are expensive and may not generalize. |
+
+My current preference for G2 is:
+
+1. finish the G1 5-seed CI queue first;
+2. take the best countable `phasei9r`/`phasei9t` checkpoints;
+3. run a clearly labelled continuation study that tests planner/actor
+   arbitration and late actor-only consolidation;
+4. only if that works, convert the continuation recipe into a from-scratch
+   schedule.
+
+This keeps the claims separated: G1 is about reliable learning from scratch;
+G2 is about extracting the maximum return once a good basin is found.
+
 The strongest current statement is therefore:
 
 > We have a credible lead: early Glass with off-at-1M currently beats our
@@ -455,4 +535,3 @@ The strongest current statement is therefore:
 > rerun is still in progress and is the deciding test.
 
 That is the right level of confidence for now.
-

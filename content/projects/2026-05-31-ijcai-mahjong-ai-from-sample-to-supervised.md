@@ -166,7 +166,34 @@ Botzone bots upload as **source code** plus a **256 MB Storage folder** mounted 
 
 ---
 
-## 8. What's next
+## 8. Update: from a fan-blind heuristic to model-driven claims
+
+After the first deployment we watched real games end in draws with nobody scoring — clean,
+legal play, but the best hand anyone reached was worth only 4 fan, below the 8-fan floor. The
+logs (replayed locally through the official judge) showed the cause was not a bug but the
+**objective**: the bot used the learned policy only to pick *which tile to discard*, while the
+**peng/chi/gang** decisions still ran through a hand-written **shanten heuristic** — "claim
+only if it gets me to *ready* faster." That rule is **fan-blind**: it optimizes distance-to-
+ready and ignores value, so it rushes onto cheap hands and never deliberately builds the
+structured shapes (清一色, 碰碰和, 混一色) that clear the 8-fan bar.
+
+The fix makes claims **model-driven**: the policy scores the legal \(\{\text{Pass}, \text{Peng},
+\text{Chi}, \text{Gang}\}\) set and picks the best, so it can *decline* a tempting claim to
+chase a higher-value hand — the trade-off the heuristic could never make. Two safety rails
+stay in place: HU is still gated by an exact fan calculation (we never trust the model to keep
+a win legal), and every emitted claim is physically re-checked before it leaves the bot. The
+result remained **0 illegal moves across 48 judged games including self-play**, and self-play
+began producing genuine wins instead of universal draws.
+
+We also closed two legality edge cases the local judge surfaced: HU was wrongly suppressed on
+the final discard (a legal 河底/海底 win), and the +8 last-tile bonus was being trusted from an
+approximate wall count — which both missed real wins and risked a phantom-fan illegal win. The
+win check now uses a strict **lower bound** on fan, so a declared win is always legal.
+
+A companion primer, *"Chinese Standard Mahjong, Explained for AI Researchers,"* covers the
+shanten-vs-fan tension from zero for readers new to the game.
+
+## 9. What's next
 
 The published literature on this competition is consistent: hand-crafted heuristics lose to supervised learning, and supervised learning loses to **self-play reinforcement learning warm-started from a supervised policy**. Our roadmap follows that arc:
 

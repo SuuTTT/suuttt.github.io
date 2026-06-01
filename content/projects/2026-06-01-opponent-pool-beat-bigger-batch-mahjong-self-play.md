@@ -72,9 +72,22 @@ We had exactly that: a Vast.ai fleet where several machines were running JAX/MuJ
 | `explore` | best PPO | frozen baseline | 1500 | high entropy (more exploration) |
 | `drawpush` | best PPO | frozen baseline | 800 | aggressive win-shaping |
 
-Total: roughly **150 parallel rollout workers** versus the ~28 cores of a single machine — about a 5× speedup in games-per-second, used here to run five *different* experiments concurrently rather than one experiment faster.
+We ran five configurations concurrently, one per box — but two hard-won lessons turned out to matter more than the raw box count.
 
-A practical note for anyone doing the same: heterogeneity bites. Boxes differed in NumPy version (one was on 2.4, where `float(array_of_one)` is now a hard error — a real portability bug we had to fix), in whether the system Python even had PyTorch, and in Vast.ai's SSH proxy-port quirk. Budget time for environment wrangling, not just compute.
+**A rented "72-core" box is not 72 cores.** Cloud GPU rentals hand you a cgroup **CPU-time quota**, not the physical host cores. The scheduler lets your threads *spread* across all 72 cores, but throttles your total compute to the quota. We measured this directly on a 72-physical-core machine whose quota was 8.6 cores:
+
+| parallel CPU-burn threads | wall time |
+|---|---|
+| 1 | 0.60 s |
+| 8 | 0.65 s — *free* up to the ~8.6-core quota |
+| 17 | 1.63 s — past quota, throttled 2.7× |
+| 40 | **9.20 s — 14× slower**, pure context-switch thrash |
+
+Across our nine free boxes the *physical* core counts summed to ~236, but the *real* quotas summed to only **~78 cores**. The single best box (a 2080 Ti rental) gave 17 cores; a same-physical A4000 gave 8.6; the small boxes gave ~6 each. The operational rule is blunt: **size your worker count to the per-box quota, not the core count it advertises** — over-subscribing is catastrophically slow, not merely wasteful. (We learned this the embarrassing way: our first sweep ran 40–50 workers on 8–17-core quotas and was needlessly throttled.)
+
+**SSH gets rate-limited.** Vast.ai routes SSH through shared proxy hosts (`ssh1.vast.ai` fronts many instances), so firing many short-lived connections at the same proxy gets you refused with "*try again after a few seconds*." Two fixes, both verified: connect to each box's **direct IP** (from `vastai ssh-url`) to skip the shared proxy, and use **SSH `ControlMaster` multiplexing** to run all commands over one persistent connection per box. With those, the throttling disappears.
+
+A third papercut: heterogeneity. Boxes differed in NumPy version (one was on 2.4, where `float(array_of_one)` is now a hard error — a real portability bug we had to fix) and in whether the system Python even had PyTorch. Budget time for environment wrangling, not just compute.
 
 ---
 
@@ -118,7 +131,44 @@ So the deployment pick (`poolbig`) is the strongest model we can *measure*, with
 
 ---
 
-## 6. Takeaways
+## 6. This is population-based training — and we should run it as a loop
+
+It's worth being explicit about what we actually did, because it is not novel and the literature tells us how to push it further. "Train several configurations in parallel, then hold a tournament to pick the best" is the intersection of three well-established ideas:
+
+- **Population-Based Training (PBT)** — Jaderberg et al., 2017 (DeepMind). Train a *population* of agents in parallel; periodically each member **exploits** (copies the weights of a better member) and **explores** (perturbs its hyperparameters). Our five concurrent configs are a population; the tournament is the fitness evaluation.
+- **League play** — the AlphaStar architecture (Vinyals et al., 2019). A growing population of frozen agents, with opponents sampled by *prioritized fictitious self-play* (play the opponents you currently struggle against). Our opponent pool is a minimal league.
+- **Competitive coevolution / tournament selection** — an old evolutionary-computation idea (Axelrod's iterated-prisoner's-dilemma tournaments, 1980; Pollack & Blair; NEAT). Fitness is defined *relative to the rest of the population*, exactly like a payoff matrix.
+
+So the reader's instinct that "this is just like the competition itself, and a bit like a genetic algorithm" is precisely right — and it points at the natural next step: stop running the train-then-tournament once, and run it **periodically as a closed loop**:
+
+```
+        ┌─────────────────────────────────────────────┐
+        │  POPULATION  {agentᵢ}     POOL  𝒫 (frozen)   │
+        └─────────────────────────────────────────────┘
+                 │ (1) train each agentᵢ in parallel vs 𝒫
+                 ▼
+              snapshot every agentᵢ
+                 │ (2) cross-play tournament  →  payoff matrix / Elo
+                 ▼
+          (3) SELECT top-k survivors by Elo
+                 │
+          (4) EXPLOIT: weak members copy a survivor's weights
+          (5) EXPLORE: perturb hyperparams (lr, λ, entropy, pool mix)
+          (6) add this generation's champions to 𝒫
+                 │
+                 └────────────────► next generation
+```
+
+This is a genetic algorithm whose fitness function is *the game itself*. Each generation the opponent pool gets stronger and more diverse, the survivors define the new frontier, and the tournament Elo identifies the champion to deploy.
+
+Two cautions the literature is emphatic about:
+
+1. **Coevolution can cycle.** If A beats B beats C beats A (intransitivity), naïve selection chases its tail and never improves in absolute terms. The mitigations are exactly AlphaStar's: keep *old* champions permanently in the pool (so the population can't forget how to beat them), and sample opponents with *prioritized fictitious self-play* rather than uniformly.
+2. **You need a fixed anchor.** Relative Elo can drift while absolute strength stalls. So every generation we also score against a *frozen* anchor — our supervised baseline — and, ultimately, against the real ladder. Progress is only real if the anchor score moves too.
+
+For our setting the loop is cheap to run: a generation is one round of parallel PPO (minutes, quota-sized to each box) plus one tournament (a few minutes on freed CPU). The plan is to run it generation-over-generation through the competition, deploying the current Elo champion and feeding any real ladder logs back in as the most valuable pool members of all.
+
+## 7. Takeaways
 
 - **Match the hardware to the bottleneck.** Self-play with a small network is CPU-bound; idle CPU on GPU-busy machines is free fuel, and idle GPUs do nothing for you.
 - **Parallelize the *search*, not just the run.** Five concurrent configurations plus an honest cross-play tournament found the answer faster than careful sequential tuning would have — and protected us from each run's noisy self-metric.

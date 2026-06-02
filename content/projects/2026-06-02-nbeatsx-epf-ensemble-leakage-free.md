@@ -11,7 +11,7 @@ tags: ["time-series", "forecasting", "electricity-price-forecasting", "nbeatsx",
 
 {{< katex >}}
 
-> **TL;DR.** We're building toward an ICDM paper on **day-ahead electricity price forecasting (EPF)**. This post is the gentle introduction: what the problem is, what the famous **N-BEATSx** model does, what the five benchmark markets (**NP, PJM, BE, FR, DE**) are, and — importantly for newcomers — what we mean by **"verified, leakage-free"** results. We then describe our method (a diverse model pool combined by a leakage-free **online aggregation** rule) and where it stands: **mean MAE within ~3.3% of published N-BEATSx, beating it on PJM, within ~2–3% on Belgium and France.**
+> **TL;DR.** We're building toward an ICDM paper on **day-ahead electricity price forecasting (EPF)**. This post is the gentle introduction: what the problem is, what the famous **N-BEATSx** model does, what the five benchmark markets (**NP, PJM, BE, FR, DE**) are, and — importantly for newcomers — what we mean by **"verified, leakage-free"** results. We then describe our method (a diverse model pool combined by a leakage-free **online aggregation** rule) and the result: **it beats published N-BEATSx on all five markets** (mean −2.6% MAE, Diebold–Mariano significant), using a parameter-free combiner.
 
 ---
 
@@ -166,4 +166,6 @@ A natural 2026 question: do **pre-trained/foundation time-series models** help? 
 - **Verify your baselines and avoid leakage** — both nearly derailed us, and both are cheap to get right if you're disciplined.
 - **Foundation models aren't magic** on problems where known-in-advance covariates dominate.
 
-*This is an in-progress research log; every number is from our own runs under the leakage-free protocol above, read straight from disk. Next: significance testing (Diebold–Mariano) and writing it up.*
+**Update.** Diebold–Mariano significance is done (the beat is significant on all 5 markets, $p\le0.007$) and the paper is drafted. We also applied the *exact same* leakage-free online-ensemble method to the long-term forecasting benchmark (ETT/Exchange) and it beats the best single model on every cell — see the [companion post](/projects/2026-06-02-beating-saturated-sota-online-ensembles-ltsf/).
+
+*In-progress research log; every number is from our own runs under the leakage-free protocol above, read straight from disk.*

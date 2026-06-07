@@ -128,6 +128,15 @@ n=25: 0.747  n=28 (final): 0.726 [0.713, 0.740]
 Several snapshots support a "significant win." Others support a "confirmed null." The final
 estimate lands below baseline. **Every intermediate certainty was wrong.**
 
+> **Postscript (same day, hours after publishing).** Three more seeds matured and the
+> behavioral-arm IQM moved again: n=31, 0.754 [0.742, 0.766] — back *above* the vanilla
+> point estimate (0.738), CIs overlapping, primary-task means now identical (0.763 vs
+> 0.764). The "final" 0.726 in the table above survived roughly four hours. We are leaving
+> the original number in place, with this note, because the post's own thesis predicts
+> exactly this — and because quietly editing the table would be a seventh mirage. The
+> camera-ready estimate will be computed once, at a pre-declared cutoff (all queued runs
+> mature, n≈37 vs 37), and not before.
+
 ## 5. Deep analysis: why abstraction cannot improve TD-MPC2 here
 
 This is the part we wish someone had written before we started. Five reasons, ordered from

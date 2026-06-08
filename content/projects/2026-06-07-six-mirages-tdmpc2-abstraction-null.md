@@ -137,6 +137,21 @@ estimate lands below baseline. **Every intermediate certainty was wrong.**
 > camera-ready estimate will be computed once, at a pre-declared cutoff (all queued runs
 > mature, n≈37 vs 37), and not before.
 
+> **Cutoff postscript (next day).** The cutoff is reached. Final behavioral-arm IQM:
+> **0.767 [0.757, 0.779] at n=34** vs vanilla 0.738 [0.715, 0.771] — CIs still overlap
+> (0.757 < 0.771), no separation. Across the campaign the gap visited *both sides* of zero —
+> +0.051 (sep) → −0.012 → +0.029 (final) — and never stably separated at any n. The arm
+> that looked like a −0.012 "loss" yesterday is a +0.029 "win" today; both are noise. Two
+> further rescue directions we tried after publishing also nulled (a prototype-space planner —
+> dead because behavioral prototypes are action-blind at the planner timescale; an
+> exploration bonus through the abstraction — moved sparse exploration but cleared no solve).
+> A third, swapping SimNorm for an FSQ codebook, produced a **7th mirage**: it CI-separated
+> above vanilla on FingerSpin at exactly n=8 (+89 [10,168]), even survived a
+> "strengthens-with-n" check from n=5→8, then collapsed to +53 [−33,+138] by n=16. FSQ's
+> only robust effect was *hurting* locomotion (CheetahRun −230, separated). The complete null
+> now spans four independent rescue directions. We did not launch the tempting n=8 Stage-2 —
+> and the n=16 data is why.
+
 ## 5. Deep analysis: why abstraction cannot improve TD-MPC2 here
 
 This is the part we wish someone had written before we started. Five reasons, ordered from

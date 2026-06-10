@@ -23,6 +23,40 @@ tags: ["tdmpc2", "glass-jax", "structural-entropy", "world-models", "jumpy-model
 
 ---
 
+## 0. First, the bottom line: TD-MPC-Glass does **not** beat TD-MPC2 (recap of the last post)
+
+The [previous post](/projects/2026-05-27-tdmpc-glass-iterations-8-9/) ended on a hopeful note — "Glass
+off-at-1M beats our internal TD-MPC2 mean on HopperHop, 5-seed confirmations continuing." Here is the
+honest closure of that thread: **under a fair, single-variable, adequately-powered protocol, Glass does
+not beat TD-MPC2.** Per-task-normalized IQM over five DMC tasks, with 95% bootstrap CIs:
+
+![TD-MPC-Glass does not beat TD-MPC2: IQM ± 95% CI, all three arms overlap](/images/glass_vs_tdmpc2_null.png)
+
+- vanilla TD-MPC2: **0.950** [0.922, 0.968] (n=37)
+- geometric Glass: **0.940** [0.851, 0.992] (n=16)
+- behavioral Glass: **0.970** [0.952, 0.984] (n=34)
+
+All three intervals **overlap** — no arm is statistically separated from vanilla. The behavioral arm's
++0.02 nominal edge sits inside the noise (and, as Part 1's §5 showed, its per-snapshot estimate wandered
+to *both* sides of baseline as seeds accumulated). The hopeful HopperHop "win" was **basin-lottery**: under
+the clean protocol neither Glass nor vanilla entered the high-reward basin (best 323 vs 286), so the earlier
+edge came from restarts/seed-luck, not the representation.
+
+**Why it didn't work — in one line:** TD-MPC2's **SimNorm latent is already a soft-clustering** (it softmaxes
+V latent groups → V soft codebooks), and the self-predictive loss already makes the dynamics coherent — so
+Glass's structural-entropy clustering mostly **re-derives structure the model already has**. We later
+*measured* this directly (the latent shows a 53% structural-entropy community gap with **no** added
+objective). The non-redundant part of Glass (its transition-graph entropy) captures real **motion-phase**
+structure that turns out to be irrelevant to control. Full retrospective:
+`docs/analysis/why-glass-failed-simnorm-redundancy.md`. Tell-tale sign we should have read sooner: the best
+Glass recipe was to *turn Glass off* at 1M — a method whose optimal schedule is "use it then remove it" is
+quietly reporting **asymptotic value ≤ 0**.
+
+The rest of this post is what we did *after* accepting that: the fair-protocol campaign, the one real
+(borrowed) win, the methodology, and four further novel bets that also came back null.
+
+---
+
 ## 1. Why we tore up Part 1's result
 
 Part 1's HopperHop "basin entries" were real numbers, but they came with restarts, population-based

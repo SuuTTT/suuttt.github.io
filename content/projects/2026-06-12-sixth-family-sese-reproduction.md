@@ -53,8 +53,13 @@ published method — the same class of finding as the "computationally
 infeasible" method that ran 10k nodes in 74 seconds, just pointed at a much
 newer paper.
 
-A cross-check with selib's independently validated SE optimizer on the same
-generations is running as this draft is written.
+The cross-check settles it: re-scoring the *same* generations with selib's
+independently validated optimizer (min 2D SE of the plain pairwise entailment
+graph, one fixed orientation derived from the construction: low minimized SE =
+fragmented semantic space = uncertain) **beats semantic entropy on both
+datasets** — TriviaQA 0.694 vs 0.669, SVAMP 0.774 vs 0.657 — and is sign-stable
+where the release flips orientation between datasets (0.445 vs 0.660 as-emitted).
+The idea works. The released computation is what loses the signal.
 
 ## The meta-point
 

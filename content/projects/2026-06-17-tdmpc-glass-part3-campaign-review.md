@@ -62,6 +62,49 @@ jumpy capability. We now always report **both**.
 macro-MPPI) is **neutral everywhere** — the gain *and* the locomotion harm both come from the **macro-MPPI
 planning**, not the representation. Jumpy is a pure planning-time intervention.
 
+### 2b. How this relates to Farebrother et al. 2026 (and why it's not the same method)
+The cited prior art is **"Compositional Planning with Jumpy World Models"** (Farebrother, Pirotta,
+Tirinzoni, Bellemare, Lazaric, Touati, 2026). On a close read, it is a *different* method that shares the
+word "jumpy":
+
+| | Farebrother 2026 | This work |
+|---|---|---|
+| Jumpy model predicts | state-occupancies of **pre-trained policies** across timescales (off-policy) | **k-step latent dynamics from primitive actions** (online, inside TD-MPC2) |
+| Macro-planning | yes — over **sequences of policies/options** (compositional) | yes — macro-MPPI over **k-step primitive-action chunks** (horizon k·n_macro=24) |
+| Requires | a library of **pre-trained policies** | nothing beyond TD-MPC2 + a k-step head |
+| Per-task-type regime | not reported | **mapped here** |
+
+Both have a macro-planning module, but they compose *different units* (policies vs primitive-action chunks).
+Our result **reproduces their headline regime** (a large win on long-horizon manipulation, ~consistent with
+their +200% on long-horizon tasks) on a simpler, online instantiation — and **adds what they do not report:
+a per-task-type breakdown, including a failure regime.**
+
+### 2c. Why does it help on manipulation and *hurt* on Hopper? (mechanism)
+It is **not** model accuracy: the macro model's k-step error is *uniformly low* on every task (jumpy_err <
+iter1_err everywhere, including Hopper). The regime split is governed by **(task credit-horizon) ×
+(dynamics forgiveness):**
+
+- **Manipulation (win):** long-horizon, goal-reaching *and* forgiving — a slightly-wrong multi-step plan
+  just means re-approach. A 24-step effective horizon improves credit assignment toward the grasp.
+- **Hopper (hurts → 0):** an unstable, fall-prone limit cycle needing **reactive per-step balance**. A long
+  macro-plan is brittle — even with an accurate model, committing multiple steps can't react to *this*
+  step's balance error → it falls and the episode dies. Longer horizon = less reactive = catastrophic.
+- **Cheetah (null):** stable runner, dense reward, reactive 1-step already near-optimal → no long-horizon
+  credit to gain, no instability to trigger → wash.
+- **Cartpole-sparse (null):** should benefit, but is exploration-limited/high-variance → horizon isn't the
+  bottleneck.
+
+**Implication:** temporal abstraction in MBRL pays off as a function of *task credit-horizon × dynamics
+forgiveness* — not representational abstraction and not raw model accuracy. It **wins on long-horizon
+forgiving tasks and actively harms unstable reactive-control tasks.** This failure regime appears to be a
+**new finding** relative to Farebrother (who test long-horizon manipulation/navigation, not fast unstable
+locomotion).
+
+**What it enables:** a **task-adaptive macro-planner** — long horizon only where it helps (long-horizon +
+forgiving), reactive otherwise — selected from cheap signals (reward sparsity + an episode-fall/instability
+proxy, *not* the uniformly-good model error). This would beat both fixed-jumpy and fixed-vanilla on a mixed
+suite, sitting on top of the Farebrother line rather than duplicating it.
+
 ## 3. The comprehensive null sweep (what does NOT beat TD-MPC2)
 - **Network backbone** (n=5, clean): a gated-residual MLP (`resmlp`) and group-attention (`attn`) do **not**
   beat TD-MPC2's plain MLP; an earlier "+40%" was a small-n (2–4) mirage that did not replicate. `resmlp`

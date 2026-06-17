@@ -281,3 +281,31 @@ sparse** tasks where *credit assignment*, not representation, is the bottleneck 
 non-trivial angle is therefore: **map the transition from "abstraction redundant" (short) to "abstraction
 necessary" (long), and build a free-at-deploy adaptive planner that switches on the criterion** — positioned
 explicitly against TD-M(PC)² (stability axis) and the ICLR-2024/Adaptive-Skip line (adaptivity axis).
+
+## 9. Deep-research synthesis + the locked plan
+An external deep-research pass (Gemini) corroborated the landscape and sharpened three corrections:
+- **Farebrother = Geometric Horizon Models on Temporal-Difference Flows**, policy+horizon-conditioned, on
+  **OGBench** (not plain AntMaze) — even more distinct from our primitive-action k-step macro.
+- **The RunningScale-saturation observation is *unpublished*** — TD-M(PC)² owns the *policy-mismatch* account
+  of the late collapse but does not document the *numerical scale-saturation* (cap=4 ≪ IQR≈16). So the late
+  collapse is a **dual failure** (control mismatch + scale saturation), and the scaling half is uncharted.
+- **The planning-vs-representation disentanglement** (macro-model uniformly accurate ⇒ locomotion failure is
+  *planning*-centric) is significant and only implicitly supported elsewhere (SPlaTES, HWM).
+
+**Honest status of the three candidate prongs (Gemini's ranking + our latest data):**
+1. **Value-Sufficiency Sieve (redundancy criterion) — the LEAD.** No one has an *operational, predictive*
+   "R²≥0.99 ⇒ auxiliary representation losses are null" criterion validated by a negative campaign. We are
+   now instrumenting its core evidence: the **linear value-decode R² over training and across tasks**
+   (currently a single 0.9994 number) — running.
+2. **Decision-time adaptive horizon — deferred.** Crowded (THICK/ASI/HWM/SPlaTES); only worth it if the
+   free-at-deploy, single-model, planning-time switch clearly beats them. A build, not a quick run.
+3. **Scale-aware fix — NULL on clean evaluation.** With low-variance eval (EVAL_NEPS=10), raising/removing
+   the RunningScale cap does **not** beat vanilla on Cabinet (vanilla final 1625 > cap16 1160 > uncap 1103).
+   The earlier "+640 win" was n=3 MPPI-eval noise. So the saturation *observation* may be novel, but the
+   *fix does not improve performance* — we will report it as a negative/clarification, not a contribution.
+
+**The paper, then, is the "critical deconstruction" (Gemini's verdict):** prove the redundancy criterion via
+the value-sufficiency sieve; disentangle the locomotion-vs-manipulation regime as a *planning* (not
+representation) failure; and report the late-collapse dual-failure honestly (policy mismatch known; scale
+saturation observed; neither cap-fix nor — in our hands — a clean universal win). Honest, grounded, and not
+a rebuild of TD-MPC2 + jumpy. Saved: `docs/research/deep_research_gemini_2026-06-17.md`.

@@ -69,6 +69,28 @@ validated by a comprehensive negative campaign.
 A jumpy k-step world model (predict \\(z_{t+k}\\) directly, plan with macro-MPPI) genuinely beats vanilla
 on contact manipulation. We reproduced it from scratch at **n=5 seeds × 500k steps**:
 
+#### The benchmark and the terms (plain English)
+All tasks are GPU-vectorized MuJoCo (MJX / `mujoco_playground`), 500k env-steps, episode length 1000.
+- **Panda manipulation** — a **Franka Panda 7-DoF robot arm**. *PandaPickCube*: reach → grasp → lift a cube to
+  a target. *PandaPickCubeOrientation*: same, but the cube must also reach a target **orientation** (harder).
+  *PandaOpenCabinet*: grasp a handle and **pull a drawer open**.
+- **Locomotion / sparse** — *CheetahRun* (run forward fast, dense reward), *HopperHop* (one-legged hopper —
+  hop forward **without falling**), *CartpoleSwingupSparse* (swing up and balance, **sparse** reward).
+
+Jargon used below:
+- **k = 8 ("k-step"):** the jumpy head predicts the latent **8 environment steps ahead in one shot**, vs the
+  ordinary 1-step dynamics model.
+- **24-step effective horizon:** the macro-MPPI planner chains **n_macro = 3** of those 8-step jumps, so it
+  evaluates action plans over **3 × 8 = 24** env-steps of lookahead — vs vanilla MPPI's short horizon (H = 3).
+- **Credit assignment toward the grasp:** the grasp/lift reward arrives many steps *after* the approach; a
+  3-step planner can't "see" that approaching now pays off later, but a 24-step planner can — so it chooses
+  approach actions that lead to a successful grasp downstream.
+- **"forgiving" / re-approach:** on Panda, a slightly-wrong multi-step plan just leaves the arm mis-positioned
+  and it retries on the next replan — no catastrophe. Contrast Hopper, where one wrong multi-step plan makes
+  it **fall over and end the episode** ("unforgiving") — which is exactly why the long horizon backfires there.
+
+
+
 ![Learning curves: jumpy vs vanilla TD-MPC2 across six tasks, mean ± SEM over seeds](/images/d2_learning_curves.png)
 
 ![Δ(jumpy − vanilla), peak and final, 95% bootstrap CIs](/images/d2_summary_bars.png)

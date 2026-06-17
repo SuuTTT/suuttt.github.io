@@ -282,6 +282,10 @@ non-trivial angle is therefore: **map the transition from "abstraction redundant
 necessary" (long), and build a free-at-deploy adaptive planner that switches on the criterion** — positioned
 explicitly against TD-M(PC)² (stability axis) and the ICLR-2024/Adaptive-Skip line (adaptivity axis).
 
+
+
+> **Update (post-run):** the value-sufficiency *sieve* I ran (linear decode of the noisy MC return-to-go) turned out **confounded by return variance** (locomotion → low R² regardless of latent quality), so it neither supports nor refutes the criterion and is dropped; an earlier 'sufficiency collapses with instability' read is retracted as an artifact. The **original criterion evidence stands** (value is *near-linear in the latent*, R²≈0.999 on V(z); + 16 real nulls). Net of this session: the collapse-fix is **null** (n=4 clean eval), sparse does **not** generalize, so **no method-novelty win survived** — the honest deliverable is the redundancy criterion + the comprehensive null campaign.
+
 ## 9. Deep-research synthesis + the locked plan
 An external deep-research pass (Gemini) corroborated the landscape and sharpened three corrections:
 - **Farebrother = Geometric Horizon Models on Temporal-Difference Flows**, policy+horizon-conditioned, on

@@ -1,7 +1,7 @@
 ---
 title: "TD-MPC-Glass, Part 3: A Full Campaign Review — What Beats TD-MPC2, What Doesn't, and One Live Lead"
 date: 2026-06-17
-description: "A consolidated review of the whole campaign to beat TD-MPC2 at the architecture/abstraction level under a strict fair protocol. The bottom line: no explicit abstraction beats it, and we now have a criterion that explains why. We reproduced the one real (prior-art) win — jumpy/temporal abstraction on contact manipulation — from scratch, and learned a sharp peak-vs-final lesson. Every backbone, frozen-dynamics, and motion-phase variant is null. The one genuinely new, non-abstraction lead: TD-MPC2's value-scale cap under-normalizes advantages on high-return tasks, causing a late-training collapse that a one-line fix partly repairs."
+description: "A consolidated review of the whole campaign to beat TD-MPC2 at the architecture/abstraction level under a strict fair protocol. The bottom line: no explicit abstraction beats it, and we have a redundancy criterion (value is near-linear in the latent) that explains why. We reproduced the one real (prior-art) win — jumpy/temporal abstraction on contact manipulation — from scratch, and learned a sharp peak-vs-final lesson. Every backbone, frozen-dynamics, and motion-phase variant is null. A value-scale 'collapse-fix' looked promising on noisy eval but is NULL on clean (low-variance) evaluation. Honest net: a rigorous negative campaign + a predictive criterion, not a method win. See the post-run updates."
 layout: "post"
 showTableOfContents: true
 math: true
@@ -23,9 +23,11 @@ tags: ["tdmpc2", "glass-jax", "world-models", "jumpy-models", "structural-entrop
 - **The one real win is prior art, not ours:** a *jumpy* (k-step macro) world model genuinely beats vanilla
   on **contact manipulation** — reproduced from scratch — but it's Farebrother et al. (2026), and it's a
   pure *planning-time* effect, not a new representation.
-- **One genuinely new, non-abstraction lead:** TD-MPC2's value RunningScale is **capped at 4.0**, but the
-  true value-IQR on manipulation is **≥16** → policy advantages are under-normalized ~4× → **late-training
-  collapse**. Raising the cap gives a **CI-separated win on Open-Cabinet (+640)** with no locomotion harm.
+- **An initially-promising lead that did NOT survive:** TD-MPC2's value RunningScale caps at **4.0** while the
+  true value-IQR on manipulation is **≥16** (a real, possibly-unpublished observation). But on **clean,
+  low-variance evaluation (n=4)** raising/removing the cap does **not** beat vanilla (Cabinet: van 1078 >
+  uncap 1055 > cap16 877; Ori: van 1670 > cap16 1476 > uncap 1294). The earlier "+640 win" was n=3 MPPI-eval
+  **noise**. **Reported as a negative.** (Details in §4 are kept for the record but superseded by this and §9.)
 
 ## 1. The redundancy criterion (the headline result)
 

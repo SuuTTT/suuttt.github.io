@@ -82,18 +82,24 @@ normalizes the policy advantage by this scale; capped 4× too low, advantages ar
 gradients too large → late-training **oscillation/collapse**. (The critic already uses LayerNorm, so the
 textbook fix is a no-op — this is a *scale-cap* issue.)
 
-**One-line fix probe (`SCALE_MAX` 4→16), n=3:**
+**Fix probe — raising the cap (`SCALE_MAX`), n=3, Δfinal vs vanilla (=4):**
 
-| Task | Δfinal vs vanilla | peak-final gap | read |
+| Task | cap = 8 | cap = 16 | peak-final gap (cap16) |
 |---|---|---|---|
-| Open-Cabinet | **+640 [254, 1034]** ✅ | 2159 → 1452 | **CI-separated win** |
-| Orientation | −51 (null) | 1367 → 779 | stabilized, but 16 over-normalizes peak |
-| Cheetah | −59 (null) | — | no locomotion harm |
+| Open-Cabinet | −263 (null) | **+640 [254, 1034]** ✅ | 2159 → 1452 |
+| Orientation | +386 [−1, 800] (borderline) | −51 (null) | 1367 → 779 |
+| Cheetah | null (no harm) | null (no harm) | — |
 
-The fix **provably stabilizes** (peak-final gap shrinks on both manipulation tasks) and **wins on Cabinet**
-with no locomotion harm. `=16` over-corrects Orientation's peak, so we're tuning the cap (sweep in flight).
-This is the first **non-abstraction**, **non-prior-art** positive signal toward beating TD-MPC2, and it's a
-*mechanistically diagnosed bug class* (under-normalized advantages on high-return tasks).
+The fix **provably stabilizes** (peak-final gap shrinks on both manipulation tasks) and gives a
+**CI-separated win on Cabinet (+640)** with no locomotion harm — the first **non-abstraction, non-prior-art**
+positive signal toward beating TD-MPC2, on a *mechanistically diagnosed bug class*.
+
+**The nuance (important):** there is **no single fixed cap that wins both tasks** — Cabinet's value-IQR is
+large (needs ≥16), Orientation's is smaller (16 over-normalizes its peak; ~8 is better). The optimum is
+**task-dependent because the value-IQR is task-dependent.** So the principled fix is not a bigger constant
+but to **remove the cap entirely** and let the RunningScale self-normalize to each task's true IQR. That
+**uncapped/adaptive** variant is running now; if it wins Cabinet *without* costing Orientation's peak, it's a
+clean, universal, one-line improvement to TD-MPC2.
 
 ## 5. Methodology contributions (defensible regardless of the headline)
 - **Mechanism-check before fan-out:** every bet gets a cheap offline gate first; this killed multiple ideas

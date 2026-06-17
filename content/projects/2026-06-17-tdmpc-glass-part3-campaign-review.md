@@ -216,3 +216,68 @@ clean, universal, one-line improvement to TD-MPC2.
   improvement), (b) a *task-adaptive planner* (macro-plan on contact, vanilla on locomotion → beat fixed
   TD-MPC2 on a mixed suite), or (c) consolidate everything into one "why world models are hard to beat,
   and the one place they're not" paper.
+
+## 7. Related work — what's already done (so we don't rebuild the wheel)
+A deliberate literature pass, because several of our threads turn out to be known. **We must position
+against these, not reinvent them.**
+
+- **The collapse-fix is largely pre-empted.** [TD-M(PC)²](https://arxiv.org/html/2502.03550v1) diagnoses
+  exactly our late-training failure — value overestimation from *policy mismatch* (the MPC planner's
+  buffered data doesn't match the value/policy prior) — and fixes it with a **policy constraint**. Our
+  value-scale-cap angle is a weaker, noisier variant of an already-solved problem. **Do not pitch it as novel.**
+- **Adaptive temporal resolution is a crowded space.** [Adaptive Temporal Abstractions from Discrete Latent
+  Dynamics (ICLR 2024)](https://openreview.net/forum?id=TjCDNssXKU) is *very close* to our adaptive-jumpy
+  idea (adaptive timescales on a discrete latent — like SimNorm). Older: [Adaptive Skip Intervals
+  (2018)](https://arxiv.org/pdf/1808.04768) already does adaptive skip-length for dynamics models.
+  [Long-Horizon Planning with Predictable Skills (RLC 2025)](https://rlj.cs.umass.edu/2025/papers/RLJ_RLC_2025_136.pdf)
+  selects skills by predictability.
+- **"When does temporal abstraction help?" is partly answered.** [Exploring the Limits of Hierarchical
+  World Models in RL (2024)](https://arxiv.org/html/2406.00483v1) studies exactly when hierarchy helps; and
+  it is established that **longer horizons hurt unstable/locomotion control via compounding error** (TD-MPC
+  deliberately uses a short horizon). So our "helps manipulation / hurts Hopper" regime is a *reproduction
+  of known behavior*, not a discovery.
+- **The closest jumpy work** is [Farebrother et al. 2026, Compositional Planning with Jumpy World
+  Models](https://arxiv.org/html/2602.19634v1): jumpy models of **pre-trained-policy occupancies** + a
+  multi-timescale consistency objective + **planning over sequences of policies** (off-policy, zero-shot),
+  +200% on long-horizon manipulation/**navigation (AntMaze-style)**. Different setting from ours (no policy
+  library, online, primitive actions), but it owns the "jumpy + long-horizon planning" headline.
+- **Lineage** (for completeness): TD-VAE and Buesing et al. (jumpy skip-step SSMs), Clockwork VAE (slow
+  latents), Dreamer/RSSM + latent overshooting, Director / THICK (hierarchical, adaptive timescales).
+
+## 8. Supervisor meeting → the honest next plan
+**The "trivial" critique is correct.** TD-MPC2 + a k-step jumpy model are both existing, and the regime map
+reproduces known behavior. So the bar is: find what is *not* in §7.
+
+**How "adaptive" would actually work (and a key technical fact):**
+- **k is a *training* parameter** — the jumpy head's input is `k·action_dim`, so changing k means a different
+  network → **must retrain.** **n_macro is a *planning* parameter** — used only at MPPI time → changing it is
+  **free at deployment, no retrain.** So "adaptive = fine-tune k" is both expensive *and* trivial.
+- **Non-trivial design:** a **horizon-conditioned jumpy model** trained once to support multiple k (e.g., a
+  k-conditioned macro head, or a small set k∈{1,2,4,8}), so the agent can **select k *and* n_macro at deploy
+  with no retraining**, driven by a cheap per-task/per-state controller. To be publishable it must (i) be
+  free-at-deploy, (ii) **beat the ICLR-2024 / Adaptive-Skip methods**, and (iii) ideally be *grounded in the
+  redundancy criterion* (use abstraction only where the value-sufficient latent stops sufficing).
+
+**The three task diagnoses (from our data):**
+- **Open-Cabinet:** both vanilla and jumpy *learn* to ~1800–2800 then **decline late** (not "fail from the
+  start"), and jumpy's *peak* is no better (Δpeak≈0). Cabinet is multi-stage (reach→grasp→pull) → a genuine
+  candidate for **skill/temporal abstraction**, *if* anywhere.
+- **HopperHop:** jumpy is the **wrong tool** (unstable, reactive) — the most it can do is *not harm* (via
+  adaptivity). **Beating** vanilla here needs a different lever (stability/exploration), not temporal abstraction.
+- **Sparse:** the cartpole-sparse edge was borderline (n=5 null). We are **now testing whether the
+  sparse-benefit generalizes** (AcrobotSwingupSparse, CartpoleBalanceSparse) — running. The hypothesis: longer
+  horizon helps *credit assignment* to sparse rewards.
+
+**Farebrother as a baseline + AntMaze — honest scope:** it's a *different setting* (compose pre-trained
+policies, off-policy, zero-shot) with **no public code**, and **AntMaze is not in our env backend**
+(mujoco_playground has DMC + Panda + locomotion, no maze). A faithful head-to-head is **weeks** and partly
+apples-to-oranges. Recommended: a rigorous *conceptual* comparison now, expand to the longest-horizon tasks we
+*do* have, and attempt full Farebrother+AntMaze only if we commit to the skill-abstraction direction.
+
+**Is abstraction usable anywhere? — the surviving thesis ("horizon-dependent redundancy"):** representation
+abstraction is redundant on **short-horizon** tasks (our criterion); but on **long-horizon / compositional /
+sparse** tasks where *credit assignment*, not representation, is the bottleneck (Cabinet, AntMaze, multi-stage),
+**temporal/skill abstraction can genuinely help** — which is exactly where Farebrother gets +200%. The novel,
+non-trivial angle is therefore: **map the transition from "abstraction redundant" (short) to "abstraction
+necessary" (long), and build a free-at-deploy adaptive planner that switches on the criterion** — positioned
+explicitly against TD-M(PC)² (stability axis) and the ICLR-2024/Adaptive-Skip line (adaptivity axis).

@@ -141,6 +141,37 @@ trains now and reproduces sensible cube-single success. The work in flight is th
 adding §7's horizon-conditioning, policy-conditioning, and plan-over-policies on top. That build is the
 next post.
 
+## 10. The benchmark: OGBench tasks, and how to read the numbers
+
+Everything is evaluated on **OGBench**, a standard offline-RL / goal-reaching benchmark. Two task
+families matter for the jumpy-model story:
+
+- **cube-single** — *robot-arm manipulation.* A Franka-style arm moves **one cube** to a target.
+  Observation 28-D, action 5-D, **short-to-medium horizon** (~100–200 steps). `cube-double/triple/
+  quadruple` add cubes (harder/longer); `play` = scripted-play offline dataset; `singletask-taskN` =
+  a fixed goal.
+- **antmaze-medium** — *quadruped navigation.* A 4-legged "ant" walks through a **maze** to a goal.
+  Observation 29-D, action 8-D, **long horizon** (hundreds of steps). This is the regime jumpy
+  planning is built for — and where CompPlan's ~+200% headline mostly comes from.
+
+**How to read an eval** (~50 episodes each):
+
+- **success rate** — \\(\texttt{episode.success}\in[0,1]\\), the **fraction of episodes that reached
+  the goal** — *the* headline metric (OGBench / CompPlan Table 1). \\(0.60\\) = solved 60%.
+- **return** — cumulative reward; sparse/negative (reward \\(\approx -1\\) per step until the goal),
+  so \\(\text{return}\approx-(\text{steps})\\). Closer to \\(0\\) = faster; \\(\text{return}=-200,\
+  \text{length}=200\\) = hit the 200-step cap and **never reached the goal** (failure).
+- **length** — steps until success or the 200-step timeout.
+
+Report **peak** success, not final: the online-finetune phase is unstable at the end, so final-step
+success collapses for the InFOM baseline and our GHM alike.
+
+**Reproduction status (honest):** **cube-single only** so far — enough to *validate the pipeline* (the
+horizon-conditioned GHM trains end-to-end, cube-single peak success inside the InFOM range). **Antmaze
+not run yet**: InFOM's script needs a locally-generated `-ft-` dataset and its generator covers
+cube/scene/puzzle but **not antmaze**. Since antmaze is the *long-horizon* test that actually probes
+the jumpy hypothesis, unblocking that dataset path is the priority before over-reading cube numbers.
+
 *Pointers (verify before citing): γ-models — Janner et al. NeurIPS 2020 (2010.14496); TD-Flow —
 Farebrother et al. ICML 2025 (2503.09817); CompPlan — ICLR-WS 2026 (2602.19634); InFOM —
 github.com/chongyi-zheng/infom; OGBench — github.com/seohongpark/ogbench; TD-MPC2 — Hansen et al. ICLR

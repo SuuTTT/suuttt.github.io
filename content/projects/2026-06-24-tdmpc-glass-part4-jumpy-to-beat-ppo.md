@@ -99,6 +99,69 @@ abstraction is non-Markov (its action depends on hidden phase state); **annealin
 (non-stationary → collapse); a **learned authority-gate underperforms** uniform full authority. The winner is
 the simplest in-loop form.
 
+### Learning curve & benchmark
+
+![Learning curve: PandaPickCube real success vs env-steps](/images/panda/learning_curve_panda.png)
+
+*Real success vs interaction budget (every point is an \(n=256\), 1000-step evaluation). Our in-loop residual
+(\(\alpha=1.0\), blue/green) climbs to ~0.79 and crosses the 0.66 competence line **~1.7× sooner** than PPO
+(red, peak 0.81); jumpy/vanilla TD-MPC2 stay flat at 0; the skill-options abstraction (0.24) and HL heuristic
+(0.063) are reference levels.*
+
+![Benchmark: PandaPickCube real success by method](/images/panda/bench_bar_panda.png)
+
+*The common-task comparison the week produced: jumpy world models 0.00 · InFOM 0.74 · PPO 0.81 · our
+abstraction-in-loop 0.79.*
+
+### Watch the policies (PandaPickCube rollouts)
+
+| TD-MPC2 — hover-hack, fails | jumpy TD-MPC2 — fails | HL controller — grasp + place |
+|:---:|:---:|:---:|
+| ![](/images/panda/gif_tdmpc2_fail.gif) | ![](/images/panda/gif_jumpy_tdmpc2_fail.gif) | ![](/images/panda/gif_hl_success.gif) |
+
+*The visual story: pure TD-MPC2 and jumpy TD-MPC2 **hover near the cube** to farm the dense shaping term and
+never complete the pick (0% real success). The heuristic controller — and, far more reliably, our in-loop
+residual and PPO — actually **grasp, lift, and place** the cube. (PPO and our-method rollouts resemble the HL
+success but succeed ~0.8 of the time; the learning curve above is the quantitative version.)*
+
+## The algorithms
+
+**(1) The Heuristic Learning (HL) loop** — a hand-written, JAX/vmappable phase-machine controller, improved
+against a measurable real-success metric (following Jiayi Weng's heuristic-learning-loop idea):
+
+```text
+controller ← phase machine [reach → descend → grasp → lift → place], knobs θ
+repeat:
+    metrics ← eval(controller, n=256)        # true success + per-phase pass-rates
+    p*      ← lowest-passing phase
+    θ       ← tune(θ, p*)                     # e.g. grasp_hold, xy_tol, place offset
+    keep θ if real_success ↑
+→ v9: reached_box ≈ 0.97 but ~6.3% real success; the wall is grasp/place dynamics
+```
+
+**(2) Skill-options abstraction (#2)** — learn the controller's option *parameters*, state-conditioned
+(value-aware), with Evolution Strategies:
+
+```text
+context ← [initial box pose, target pose]
+kv      ← clip(KV_BASE + KV_SCALE · tanh(pi_hi(context)), lo, hi)  # option params
+a_t     ← option_controller.act(s_t, z_t ; kv)                    # z = phase carry
+train pi_hi by ES to maximize true success
+→ 0.063 → 0.24.  Ablation: learning the params → 0.15; +state-conditioning → 0.24
+```
+
+**(3) In-loop residual — our latest method (#5/#5b/#5c)** — keep the controller *live*, add a
+Markov-conditioned residual at full persistent authority, train with gradient RL:
+
+```text
+z_t ← controller phase/option state          # fed INTO the observation => Markov in (s,z)
+a_t ← clip( a_option(s_t, z_t) + alpha * pi_res(s_t, z_t),  -1, 1 )   # alpha = 1.0, constant
+train pi_res with PPO on task reward + sub-goal milestone shaping
+→ 0.24 → 0.48 (alpha=0.5) → 0.79 (alpha=1.0).  Ties PPO 0.81; competence ~1.7x faster.
+why: the abstraction is non-Markov, so it must stay IN the loop (distilling it out → 0);
+annealing alpha backfires; a learned alpha-gate underperforms a uniform alpha=1.0.
+```
+
 ## 6. Aside: the model is 5× over-parameterized (confirmed at 5 seeds)
 
 A cheap, robust positive: a **`tiny` TD-MPC2** (0.72M params, 5× smaller, ~1.6× faster) keeps a **median ~99%**

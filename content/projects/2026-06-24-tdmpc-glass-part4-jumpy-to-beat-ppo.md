@@ -41,6 +41,15 @@ scoring **real success** (`box_target ≥ 0.9`, the actual pick-and-place, not s
 outright. So did vanilla TD-MPC2: both **reward-hack** the dense shaping (hover near the box to farm the
 proximity term) and complete the task **0%** of the time at feasible budgets.
 
+*Rendered rollouts — the failure mode the reward curve hides:*
+
+| TD-MPC2 — hovers, never grasps | jumpy TD-MPC2 — hovers, never grasps |
+|:---:|:---:|
+| ![](/images/panda/gif_tdmpc2_fail.gif) | ![](/images/panda/gif_jumpy_tdmpc2_fail.gif) |
+
+*Both world-model policies park the gripper near the cube to farm the dense proximity term and never close the
+grasp — high shaped return, **0% real pick-and-place**. This is why we score on `box_target ≥ 0.9`, not return.*
+
 That broke the intended comparison — you can't fill a "common task" cell with a method that gets 0. So the
 table question changed from "jumpy vs flow-occupancy" to the blunter **"what actually solves this task, and
 can an abstraction beat the model-free baseline?"** Which meant adding the baseline we'd been missing.
@@ -63,6 +72,18 @@ The uncomfortable read: the world-model/abstraction methods we care about were *
 same pattern we'd seen all project. (We also did a four-part DMC field report this week confirming TD-MPC2
 beats PPO **only** on sample-efficiency and exploration-bottlenecked tasks, loses wall-clock and high-dim, and
 is 5× over-parameterized.)
+
+| Axis | Winner | Evidence |
+|---|---|---|
+| Sample-efficiency (env-steps to a return) | **TD-MPC2** | 28–160× fewer env-steps |
+| Hard-exploration tasks | **TD-MPC2** | HopperHop 283 vs PPO 33; Acrobot 420 vs 268 |
+| Non-exploration "hard" tasks | tie | FingerTurnHard 975 ≈ 968 |
+| Wall-clock (time to competence) | **PPO** | ~9× faster |
+| High-dimensional (Humanoid) | **PPO** | default TD-MPC2 diverges to NaN; PPO learns (HumanoidWalk 285) |
+| Model size | — | `tiny` (0.72M) keeps a median ~99% → 5× over-parameterized |
+
+*The four-part DMC field report (Parts 18–22): world-model planning is a sample-efficiency / hard-exploration
+tool, not a universal win — model-free PPO takes wall-clock, high-dim, and most asymptotic returns.*
 
 ## 4. The BC-data gap → building a Heuristic Learning loop
 
@@ -115,14 +136,14 @@ abstraction-in-loop 0.79.*
 
 ### Watch the policies (PandaPickCube rollouts)
 
-| TD-MPC2 — hover-hack, fails | jumpy TD-MPC2 — fails | HL controller — grasp + place |
-|:---:|:---:|:---:|
-| ![](/images/panda/gif_tdmpc2_fail.gif) | ![](/images/panda/gif_jumpy_tdmpc2_fail.gif) | ![](/images/panda/gif_hl_success.gif) |
+| HL controller / our in-loop method — grasp → lift → place (success) |
+|:---:|
+| ![](/images/panda/gif_hl_success.gif) |
 
-*The visual story: pure TD-MPC2 and jumpy TD-MPC2 **hover near the cube** to farm the dense shaping term and
-never complete the pick (0% real success). The heuristic controller — and, far more reliably, our in-loop
-residual and PPO — actually **grasp, lift, and place** the cube. (PPO and our-method rollouts resemble the HL
-success but succeed ~0.8 of the time; the learning curve above is the quantitative version.)*
+*Contrast with the **hover-fail rollouts at the top** (TD-MPC2 / jumpy TD-MPC2, which never grasp): the
+heuristic controller — and, far more reliably, our in-loop residual and PPO — actually **grasp, lift, and
+place** the cube. PPO and our-method rollouts resemble this HL success but complete it ~0.8 of the time; the
+learning curve above is the quantitative version.*
 
 ## The algorithms
 

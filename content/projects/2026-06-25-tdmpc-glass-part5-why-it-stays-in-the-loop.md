@@ -1,7 +1,7 @@
 ---
 title: "Why the Abstraction Has to Stay in the Loop — Negative Results, a Physical Ceiling, and What an Abstraction Is Actually For"
 date: 2026-06-25
-description: "Follow-up to the beat-PPO update: the in-loop residual on a hand-coded controller ties PPO (0.79 vs 0.81) and beats it 1.7x on sample-efficiency. This post details the loop and the analytic controller, explains the negative results (distillation, authority-annealing, and a learned gate all fail) as a necessity proof that the controller must stay in the loop, shows that 0.83 is a physical kinematic ceiling (proven both directions), and reframes the contribution: comparable success with better sample-efficiency, stability, reusability, and interpretability — conditional on a task-matched, parametrized prior."
+description: "Follow-up to the beat-PPO update: the in-loop residual on a hand-coded controller ties PPO (0.79 vs 0.81) and beats it 1.7x on sample-efficiency. This post details the loop and the analytic controller, shows that 0.83 on PandaPickCube is a physical kinematic ceiling (proven both directions, so both methods tie there), and lays out the plan to beat PPO on success on tasks with headroom by combining the abstraction's prior with selective model-based planning — and, longer term, with TAMP, which is itself both a planner and an abstraction. A brief necessity check (distillation, authority-annealing, and a learned gate all do worse than keeping the controller in the loop) confirms the in-loop coupling."
 layout: "post"
 showTableOfContents: true
 math: true
@@ -13,9 +13,10 @@ tags: ["world-models", "TD-MPC2", "PPO", "abstraction", "residual-RL", "manipula
 
 > Continuing from the [last update](https://suuttt.github.io/projects/2026-06-24-tdmpc-glass-part4-jumpy-to-beat-ppo/):
 > the headline was a heuristic-in-the-loop residual that **ties PPO (0.79 ± 0.01 vs 0.81) and reaches competence
-> ~1.7× faster**. This post answers the three questions that came back: *what exactly are the negative results,
-> why were we pushing PPO's success at all, and what is the actual claim* — with the loop, the controller, and
-> the latest numbers spelled out.
+> ~1.7× faster**. This post spells out the method (the loop and the analytic controller), shows *why* the
+> ~0.83 success on PandaPickCube is a shared physical ceiling rather than a method gap, and lays out the concrete
+> **plan to beat PPO** on tasks with headroom — by adding selective planning, and eventually TAMP, on top of the
+> abstraction. Beating the strong model-free baseline is the goal; this is the path.
 
 ## 1. The loop and the analytic controller (what "in the loop" means)
 
@@ -51,12 +52,12 @@ in-loop residual reaches **0.79 ± 0.01** real success (box_target ≥ 0.9, n=25
 PPO's **0.81**, and crosses the 0.66 competence bar at **19.7M** steps vs PPO's **32.8M** — the ~1.7× sample
 -efficiency win.
 
-## 2. The negative results, explained — a *necessity proof*, not failures
+## 2. A brief necessity check — the controller can't be removed
 
-The supervisor's question — "I didn't understand the negative-result part" — is fair, because the negatives are
-only meaningful together. They are **three independent attempts to take the controller *out* of the runtime
-loop, all of which are worse than keeping it in.** That is how you prove a component is necessary: remove it,
-show it breaks.
+This is a small supporting result, not the headline: it just closes the obvious question, *"is the controller
+only a training-time scaffold you can drop afterward?"* No. **Three independent attempts to take the controller
+out of the runtime loop are all worse than keeping it in** — the standard way to show a component is necessary
+(remove it, watch it break):
 
 | route to *remove* the controller | what it does | result |
 |---|---|---|
@@ -74,12 +75,12 @@ mid-episode. The residual has nothing to stand on without the controller beneath
 That is the real content of "the abstraction has to stay in the loop": not a slogan, but a claim falsified three
 ways and surviving.
 
-## 3. Why we pushed PPO's success — and why that was the wrong scoreboard
+## 3. Beating PPO is the goal — but on PandaPickCube ~0.83 is a shared *physical* ceiling
 
-We pushed success because *beating strong model-free RL* is the field's bar for "this structure earns its
-keep." So we threw seven levers at PandaPickCube to exceed PPO and approach 100%: bigger nets, a capacity
-sweep, closed-loop retry, two curricula, deploy-time best-of-k, an orientation-aware controller, longer budget,
-and end-to-end learned grasping. **None beats ~0.83.**
+Beating a strong model-free baseline is the bar, and it stays the goal. So we threw seven levers at
+PandaPickCube to exceed PPO and approach 100%: bigger nets, a capacity sweep, closed-loop retry, two curricula,
+deploy-time best-of-k, an orientation-aware controller, longer budget, and end-to-end learned grasping. **None
+beats ~0.83 — and crucially, neither does PPO.**
 
 The reason is not a learning shortfall — it is **physics**, and we proved it both directions:
 
@@ -89,13 +90,17 @@ The reason is not a learning shortfall — it is **physics**, and we proved it b
 - **Backward (the clean falsification):** simply **remove** the far-reach configs from the spawn distribution
   (17.6% of spawns exceed 0.84 m, matching the ~17% failure rate) and PPO success goes to **1.000**.
 
-So "push success higher" is impossible on this task/metric for *any* method — which is exactly why the project
-stopped optimizing success and moved the contribution elsewhere.
+So on PandaPickCube, ~0.83 is a *shared* ceiling — PPO sits there too, and no method can pass it because the
+last ~17% is kinematically infeasible. You cannot "beat PPO" on success on a task where both are pinned to the
+physics. The right response is not to give up on beating PPO — it is to (a) bank the win the abstraction
+*already* has here (sample-efficiency, ~1.7×), and (b) chase the success win on **tasks with headroom**, with a
+sharper tool: planning.
 
-## 4. The corrected claim — and the reusability arc
+## 4. Where the abstraction stands today — and what's already won
 
-To be precise, because it is easy to over-state: **the in-loop residual does *not* beat PPO on success.** It
-*ties* where the controller's prior fits and *trails* where it doesn't:
+To be precise about the *current* standing (the success win is still open and pursued in §6): **the in-loop
+residual matches PPO on success where the controller's prior fits and trails where it doesn't** — while already
+winning on the efficiency/robustness axes:
 
 | task | in-loop residual | PPO |
 |---|---|---|
@@ -111,13 +116,14 @@ recovers it to **0.67** (~70% of the gap), but fuller parametrization plateaus a
 correcting an analytic grasp has a ceiling below end-to-end RL on hard tasks. The design lesson: **abstractions
 are reusable only when their priors are *parametrized* to the task's degrees of freedom, not hard-coded.**
 
-So the honest, defensible thesis is **not** "abstraction beats PPO." It is:
+So the banked result so far is:
 
-> **A small residual on a task-matched, parametrized abstraction gives comparable success with better
-> sample-efficiency, stability, and interpretability — and transfers across tasks when the prior is
-> parametrized.** The value is a *more trustworthy, transferable, debuggable* controller at matched success,
-> not a higher score; and the three negatives above explain why the structure that delivers it must stay in the
-> loop.
+> **A small residual on a task-matched, parametrized abstraction matches PPO's success with ~1.7× better
+> sample-efficiency, more stability, and interpretability — and transfers across tasks when the prior is
+> parametrized.**
+
+That is the foundation, not the finish line. The remaining goal — *beating* PPO on success — is what the next
+section is for, and the tool is planning.
 
 (Stability shows up concretely: the matched/parametrized residual barely moves from peak to final, whereas an
 ill-matched residual exhibits a fragile optimum that collapses under continued training. Interpretability is
@@ -133,14 +139,31 @@ benchmark entirely** (InFOM's finetuning datasets are generated locally for mani
 appears nowhere in the repo or paper). So the antmaze number is an out-of-benchmark extension, not a
 reproduction — a correction we made rather than leave a misleading comparison standing.
 
-## 6. Ongoing
+## 6. The plan to beat PPO — selective planning, then TAMP
 
-- **When does planning help vs hurt?** TD-MPC2's planner helps HopperHop (+8% over the reactive policy) but
-  *hurts* PandaPickCube (it plans over a reward-hacked value). We're running a controlled correlation across
-  several DMC tasks — planning advantage vs learned-model accuracy — to turn that into a "plan-when-the-model-is
-  -accurate" rule, and a confidence-gated planner.
-- **Does the parametrize-the-prior recipe generalize to a third task?** Open — the clean fixed-vs-parametrized
-  contrast is harder to construct than it looks, and we're choosing the right task.
+Beating PPO on *success* is the open goal. On PandaPickCube it's physically impossible (shared 0.83 ceiling),
+so the plan targets **tasks with headroom** and brings a sharper instrument — planning — on top of the
+in-loop abstraction:
+
+1. **Use planning where it actually pays.** Model-based planning (MPPI through the learned model) helps
+   *precisely when the learned model is accurate*: +8% over the reactive policy on HopperHop, but it *hurts*
+   PandaPickCube, where it plans over a reward-hacked value. We're running a controlled correlation across
+   several DMC tasks — *planning advantage vs learned-model accuracy* — to turn this into a **"plan-when-the
+   -model-is-accurate" rule** and a **confidence-gated planner** that plans only in trustworthy regions and
+   defers to the policy/controller elsewhere.
+2. **Abstraction prior + selective planning on harder tasks.** The abstraction supplies a competent prior and
+   sample-efficiency; selective planning adds lookahead exactly where the model supports it. On longer-horizon /
+   sparse tasks — where PPO's exploration struggles (recall TD-MPC2's own failure on PandaPickCube was a
+   *learning-time exploration* failure) — this combination is where beating PPO on success is realistic.
+3. **TAMP as the principled controller.** Longer term, **task-and-motion planning (TAMP)** is a natural fit: it
+   is *simultaneously a planner and an abstraction* — a symbolic/geometric layer that is essentially a
+   principled, general version of our hand-coded controller. Swapping the analytic controller for a TAMP layer
+   (keeping the learned residual + selective planning on top) would generalize the prior across tasks while
+   preserving the in-loop coupling that Section 2 shows is necessary. This unifies the two threads of the
+   project — *planning* and *abstraction* — under one framework.
+
+(Also open: whether the parametrize-the-prior recipe generalizes cleanly to a third task — the fixed-vs
+-parametrized contrast is harder to construct than it looks, and we're choosing the right task.)
 
 Full per-experiment write-ups (Parts 25–37), with learning curves, the benchmark table, rollout videos, the
 upright-IK feasibility proof, and the workspace-constraint falsification, are in the

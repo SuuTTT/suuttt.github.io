@@ -1,7 +1,7 @@
 ---
-title: "TD-MPC-Glass, Part 5: The Beat-PPO Reality Check — We Solve Panda, PPO Solves the Hard Ones"
+title: "TD-MPC-Glass, Part 5: A Method Map — State vs Symbol vs Planning vs PPO, and Where JEPA Fits"
 date: 2026-07-01
-description: "Weekly review (Jun 24 – Jul 1). We finished the Panda story (a learned residual breaks the analytic contact ceiling but matched PPO still wins the asymptote — a prior buys sample-efficiency, not a higher ceiling), closed the anti-collapse question (the right regularizer is downstream-dependent), then went hunting for new environments where we beat PPO. We didn't find one — and the reason is instructive: a return-based scan nearly produced a fake 'beat' (twice, including my own over-report), until we scored real success and confirmed the MuJoCo Playground PPO genuinely solves the hard dexterous/manipulation tasks (0.81–0.99) that our TD-MPC2 fails at a practical budget. An honest map of exactly where each method wins."
+description: "The question driving the whole recent program: across all Panda + DMControl tasks, when does each of four approaches win — state abstraction (SE/glass), symbol abstraction (analytic controllers/TAMP), planning (TD-MPC2), and PPO — measured LeCun-style by learning speed, not just final score? Then the JEPA pivot: LeCun's argument that a non-generative predictor needs an information (anti-collapse) term and that hierarchical planning is where structure could pay off — and the experiments we ran on both, plus this week's beat-PPO reality check that pins down exactly where each method lives. The recurring law: abstraction and priors buy learning speed, not a higher ceiling."
 layout: "post"
 showTableOfContents: true
 math: true
@@ -11,34 +11,46 @@ tags: ["world-models", "TD-MPC2", "PPO", "abstraction", "manipulation", "dextero
 
 {{< katex >}}
 
-> Weekly review (Jun 24 – Jul 1). Part 4 ended on a cliffhanger: an abstraction-in-the-loop residual *tied* PPO
-> and beat it on sample-efficiency. So this week opened with one driving question — **can we actually *beat* PPO,
-> not just tie it?** — and the whole week is the story of chasing that answer honestly, including the moment it
-> almost fooled us.
+> The real question behind this whole program isn't "can we beat PPO once" — it's a **map**: across all Panda and
+> DMControl tasks, *when does each family of methods win?* We've been comparing four — **state abstraction**
+> (structural-entropy / "glass" latents), **symbol abstraction** (analytic controllers, TAMP), **planning**
+> (TD-MPC2), and plain **PPO** — and, following LeCun, scoring them by **learning speed**, not just final return.
+> This post lays out that map, the **JEPA** detour it took us on, and this week's beat-PPO reality check that
+> nails down the boundaries. The one law that keeps recurring: *abstraction and priors buy learning speed, not a
+> higher ceiling.*
 
-### The road this week (the through-line)
-Everything below is one arc; here's the map so the pieces connect:
+## The method map (what wins, measured by learning speed)
+Four ways to get a policy, and — per LeCun's point that the honest axis is **how fast you learn** — where each
+one actually pays off, from all our Panda + DMControl runs:
 
-1. **Unfinished business (→ §1).** Our Panda pick controller was stuck at 0.37 real success — a *contact-physics*
-   ceiling. Before chasing new wins we had to answer: is 0.37 the *task's* limit, or just our hand-written
-   control's? We hand the wall to a **learned residual** — and it breaks (0.37 → 0.72). *But matched PPO still
-   wins the ceiling (0.81).* First data point: a prior buys **speed, not ceiling**.
-2. **A side door we had to close (→ §2).** If behavioral abstraction only buys speed, maybe *representation*
-   abstraction (our "glass"/structural-entropy latent) is where the win hides. We settle the **anti-collapse**
-   question with every control — and it's redundant (with one genuinely-useful, downstream-dependent nuance).
-   Two doors closed; the prior isn't a ceiling-lever on either.
-3. **So go hunt a real beat (→ §3–4).** Tie on the tasks we know ⇒ maybe there's a *new* environment where our
-   model-based planner beats PPO outright. We scan harder MuJoCo Playground envs (dexterous hands, orientation
-   picks)… and the early numbers look *thrilling* — until they don't. **A return-based mirage nearly became a
-   published "beat" (mine).** Scoring *real success* killed it.
-4. **The honest verdict + the map (→ §5).** We verify what PPO actually does on those hard tasks (it *solves*
-   them, 0.81–0.99; we don't at a practical budget), which finally pins down **exactly where each method wins** —
-   and drops the whole hunt onto the broader **DMControl benchmark** (§5b) it's part of.
+| method | what it is | wins (fast / capable) | loses | key runs |
+|---|---|---|---|---|
+| **PPO** | model-free on-policy | huge throughput; **solves** sample-hungry high-DoF (Leap reorient **0.99**, PickCubeOrient **0.81**, CheetahRun 928 @285M) | sample-**inefficient**; **fails** exploration-hard (HopperHop **33**) | §3–5, benchmark |
+| **Planning — TD-MPC2** | self-predictive latent world-model + MPPI | 3–4 orders more **sample-efficient**; wins exploration-hard (HopperHop **367** vs 33) | slow wall-clock ⇒ can't reach the 100M+ steps dexterous tasks need ⇒ 0 there | §3–5b |
+| **Symbol — analytic/TAMP + residual** | hand-written skill / task-and-motion prior | **fast to competence** where the prior fits (Pendulum **836** vs 46; OpenCabinet **7×**; Reacher **3×**) | dead weight (**anchor**) where it doesn't (locomotion: vanilla wins 5/5); analytic-alone caps at contact physics (**0.37**) | §1 |
+| **State — SE / "glass"** | structural-entropy structure on the latent | — (this was the bet) | **redundant**: glass ≈ TD-MPC2 on 16 DMC (value probe \(R^2\approx0.999\)); SE *hurts* continuous geometry; +1.35× wall-clock | §2, §5b |
 
-The motivation never changed — *beat PPO honestly* — and the answer this week is a precise "here's where you can,
-here's where you can't," bought partly by catching ourselves red-handed. On to the details.
+Read the "loses" column as the thesis: no state/symbol/planning prior *raises the ceiling* — each just shifts
+**where on the speed axis** you land. PPO is the reference: slow-but-eventually-capable where it can explore,
+absent where it can't.
 
-## 0. The bottom line
+## The JEPA detour (LeCun's three bets)
+Midway through, LeCun's JEPA talk reframed our own "glass" idea. His three claims map onto three experiments we ran:
+
+1. **A non-generative predictor needs an *information* (anti-collapse) term** or it collapses. → We tested exactly
+   that term (VICReg vs a one-line **uniformity** loss vs **SE**), and found the right information term is
+   **downstream-dependent** — §2.
+2. **Hierarchical planning is where structure pays off.** → We built a faithful **H-JEPA** (latent subgoals +
+   latent planning) and tried SE *for the hierarchy*. Verdict: learned hierarchy is **not** the lever — H-JEPA
+   solves Panda (0.367) only because we hand it a *competent low-level primitive*; the hierarchy itself buys only
+   modest speed (2-level 0.215 vs 1-level 0.184). The lever is the primitive, §1.
+3. **Measure learning speed, not asymptote.** → This is now the axis of the whole map above, and of §5's honest
+   split. Every "win" here is a steps-to-competence win.
+
+The rest is the evidence, in the order we actually walked it: finish Panda (§1) → close the representation door
+(§2) → hunt a real beat and nearly fool ourselves (§3–4) → the verified map + benchmark (§5–5b).
+
+## Bottom line (the four takeaways)
 - **A *learned* residual breaks the analytic contact ceiling on Panda (0.37 → 0.72), proving the "cube tips in
   the gripper" wall is *learnable* — but a matched-budget vanilla PPO still wins the asymptote (0.81).** Across
   two Panda tasks the story is identical: a structured prior buys **sample-efficiency (~1.6–7×), not a higher

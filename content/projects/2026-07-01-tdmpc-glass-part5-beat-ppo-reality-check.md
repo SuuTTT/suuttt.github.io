@@ -11,11 +11,32 @@ tags: ["world-models", "TD-MPC2", "PPO", "abstraction", "manipulation", "dextero
 
 {{< katex >}}
 
-> Weekly review (Jun 24 – Jul 1). Part 4 ended with a heuristic-in-the-loop residual *tying* PPO and beating it
-> on sample-efficiency. This week we pushed on three fronts — finish the Panda story, close the anti-collapse
-> question, and go find a *new* environment where we beat PPO outright. The last one is the interesting failure:
-> it forced us to score **real task success** instead of return, which caught a reward-gaming mirage (mine
-> included) and produced a clean, honest map of where model-based planning wins and where PPO's throughput wins.
+> Weekly review (Jun 24 – Jul 1). Part 4 ended on a cliffhanger: an abstraction-in-the-loop residual *tied* PPO
+> and beat it on sample-efficiency. So this week opened with one driving question — **can we actually *beat* PPO,
+> not just tie it?** — and the whole week is the story of chasing that answer honestly, including the moment it
+> almost fooled us.
+
+### The road this week (the through-line)
+Everything below is one arc; here's the map so the pieces connect:
+
+1. **Unfinished business (→ §1).** Our Panda pick controller was stuck at 0.37 real success — a *contact-physics*
+   ceiling. Before chasing new wins we had to answer: is 0.37 the *task's* limit, or just our hand-written
+   control's? We hand the wall to a **learned residual** — and it breaks (0.37 → 0.72). *But matched PPO still
+   wins the ceiling (0.81).* First data point: a prior buys **speed, not ceiling**.
+2. **A side door we had to close (→ §2).** If behavioral abstraction only buys speed, maybe *representation*
+   abstraction (our "glass"/structural-entropy latent) is where the win hides. We settle the **anti-collapse**
+   question with every control — and it's redundant (with one genuinely-useful, downstream-dependent nuance).
+   Two doors closed; the prior isn't a ceiling-lever on either.
+3. **So go hunt a real beat (→ §3–4).** Tie on the tasks we know ⇒ maybe there's a *new* environment where our
+   model-based planner beats PPO outright. We scan harder MuJoCo Playground envs (dexterous hands, orientation
+   picks)… and the early numbers look *thrilling* — until they don't. **A return-based mirage nearly became a
+   published "beat" (mine).** Scoring *real success* killed it.
+4. **The honest verdict + the map (→ §5).** We verify what PPO actually does on those hard tasks (it *solves*
+   them, 0.81–0.99; we don't at a practical budget), which finally pins down **exactly where each method wins** —
+   and drops the whole hunt onto the broader **DMControl benchmark** (§5b) it's part of.
+
+The motivation never changed — *beat PPO honestly* — and the answer this week is a precise "here's where you can,
+here's where you can't," bought partly by catching ourselves red-handed. On to the details.
 
 ## 0. The bottom line
 - **A *learned* residual breaks the analytic contact ceiling on Panda (0.37 → 0.72), proving the "cube tips in
@@ -39,10 +60,10 @@ tags: ["world-models", "TD-MPC2", "PPO", "abstraction", "manipulation", "dextero
 `PandaPickCube` (MuJoCo Playground) is a 7-DoF Franka that must **reach** a small cube, **grasp** it, **lift**
 it, and **place** it upright at a target. We score *real* success, not shaped return: an episode counts only if
 
-$$\\text{box\\_target} \\;=\\; 1 - \\tanh\\!\\big(5\\,(0.9\\,\\lVert p_\\text{err}\\rVert + 0.1\\,\\theta_\\text{err})\\big) \\;\\ge\\; 0.9,$$
+$$\text{box\_target} \;=\; 1 - \tanh\!\big(5\,(0.9\,\lVert p_\text{err}\rVert + 0.1\,\theta_\text{err})\big) \;\ge\; 0.9,$$
 
 i.e. the cube must end **both** at the target *position* and near-upright *orientation* — concretely
-\\(0.9\\,\\lVert p_\\text{err}\\rVert + 0.1\\,\\theta_\\text{err} \\lesssim 0.02\\). That `0.1·θ` term is the whole story below.
+\(0.9\,\lVert p_\text{err}\rVert + 0.1\,\theta_\text{err} \lesssim 0.02\). That `0.1·θ` term is the whole story below.
 
 ### 1.2 Where the 0.37 comes from — the tall cube tips in the grip
 Our analytic skill (a hand-written reach/grasp/lift/transport/place controller) reaches, grasps, and lifts the
@@ -71,13 +92,13 @@ contrast, a success keeps the cube upright the whole carry — tilt **4.5° → 
 
 But that's it. No analytic gain knob crosses ~0.37, because the servo *itself* perturbs placement *position* while
 righting orientation — through the single compliant contact you can't satisfy both halves of the
-\\(0.9\\,p + 0.1\\,\\theta \\le 0.02\\) budget at once. So we had a genuine ceiling **for the analytic-skill family**.
+\(0.9\,p + 0.1\,\theta \le 0.02\) budget at once. So we had a genuine ceiling **for the analytic-skill family**.
 The question that names this section: is ~0.37 a ceiling of the *task/hardware*, or just of *hand-written control*?
 
 ### 1.4 Hand the wall to a learner: a residual policy
 We put a **learned residual** on top of the analytic skill and trained it by RL against the true reward,
-\\(a = \\mathrm{clip}\\big(a_\\text{skill} + \\alpha\\,\\pi_\\text{res},\\,-1,1\\big)\\), sweeping the authority
-\\(\\alpha\\), and — the load-bearing control — a **budget-matched vanilla PPO** (same env, same step budget, same
+\(a = \mathrm{clip}\big(a_\text{skill} + \alpha\,\pi_\text{res},\,-1,1\big)\), sweeping the authority
+\(\alpha\), and — the load-bearing control — a **budget-matched vanilla PPO** (same env, same step budget, same
 eval).
 
 | arm | PandaPickCube (success) | PandaOpenCabinet (success) |
@@ -105,6 +126,11 @@ was an under-budgeted baseline; the honest matched PPO is 0.81.)
 
 ## 2. Closing the anti-collapse question: it's downstream-dependent
 
+*Why this, now?* §1 said a **behavioral** prior buys speed, not ceiling. The last place a real win could hide is
+the **representation** itself — the "glass"/structural-entropy latent this whole project is named for. If a better
+latent doesn't lift control, then abstraction is redundant on *both* axes and the only honest path to beating PPO
+is finding the right *task* (§3). So we close it properly, with every control.
+
 A self-predictive (JEPA/SimNorm) latent trained only to predict its own future can **collapse** — the encoder maps
 everything to (nearly) one point, prediction becomes trivially perfect, and the representation is useless. You need
 an **anti-collapse term**. Our "glass" program bet on **structural entropy (SE)**; the honest answer is that SE
@@ -114,7 +140,7 @@ how each is implemented:
 - **VICReg** — *per-dimension* anti-collapse: a **variance hinge** (push each latent coordinate's std ≥ 1) plus a
   **covariance penalty** (decorrelate coordinates). Fights collapse one axis at a time.
 - **Uniformity** (Wang & Isola) — the **one-line relational** term
-  \\(\\mathcal{L}_\\text{unif}=\\log\\,\\mathbb{E}_{i\\ne j}\\,e^{-2\\lVert z_i-z_j\\rVert^2}\\), i.e.
+  \(\mathcal{L}_\text{unif}=\log\,\mathbb{E}_{i\ne j}\,e^{-2\lVert z_i-z_j\rVert^2}\), i.e.
   `(-2*pdist(z).pow(2)).exp().mean().log()` — pushes *all pairs* of embeddings apart on the hypersphere. No graph,
   no partition, no tree.
 - **SE (structural entropy)** — build a kNN graph on the latents, compute its minimal-2D-SE **community partition**
@@ -150,7 +176,7 @@ raw-observation ceiling* (an identity encoder that trivially solves the maze):
 
 Two things fall out. **(a)** SE *fixes a collapse VICReg cannot* — but the random-partition control shows the win
 is the *relational/pairwise* structure, not the SE community tree; a one-line uniformity loss matches it. **(b)** On
-Panda, the same SE machinery is a **null**: a frozen-encoder value/geometry probe gives VICReg \\(R^2=0.987\\) for
+Panda, the same SE machinery is a **null**: a frozen-encoder value/geometry probe gives VICReg \(R^2=0.987\) for
 end-effector→cube vs SE's 0.736 — and **SE-on-random-graph recovers to 0.986**, proving SE's *community bucketing*
 (effective rank 31→13) is what destroys the continuous manipulation geometry.
 
@@ -243,7 +269,7 @@ live dashboard (16 tasks × 3 seeds, glass / TD-MPC2 / PPO). Two headlines it se
 "glass" latent shows **no systematic return difference from vanilla TD-MPC2** — ties within 95% CI on ~12/16,
 the few separations tracking single collapsed seeds in *both* directions. The only robust effect is that glass
 costs **~1.35× wall-clock**. On a value-sufficient self-predictive (SimNorm) latent — where a linear value-probe
-already gets \\(R^2 \\approx 0.999\\) — an explicit representation abstraction has nothing left to add.
+already gets \(R^2 \approx 0.999\) — an explicit representation abstraction has nothing left to add.
 
 **(ii) TD-MPC2 vs PPO on DMControl is a clean split by exploration difficulty** (peak return; note the wildly
 different budgets):

@@ -45,18 +45,41 @@ targets a planner pursues**. We already own SE, a working planner, and a control
 |---|---|---|
 | A1 mechanism (same-weights ablation, **trained** ckpt) | ✅ done | **GO (n=1 task)** — planning covers 2.2× more cells |
 | A1-core (planning vs π-only, **from scratch**, w/ coverage) | ✅ done | **NULL (mildly reversed)** — no coverage gain at 80k |
-| A1-full (learnable task, coverage across training curve) | ⏳ queued | reframed (see below) |
+| A1-full (learnable task, coverage across curve) | ✅ done | **NULL** — no coverage *or* return gain (WalkerRun) |
+| A1-decisive (exploration-hard **and** learnable) | ⏳ queued | the test that actually isolates the claim |
 | A2 (novelty-seeking MPPI) | ⏳ queued | — |
 | A3 (SE-subgoal discovery) | ⏳ queued | — |
 
-**Synthesis so far (the honest reconciliation):** the two A1 results look contradictory but aren't. Planning
-increases coverage **only once the world model is competent** (mechanism GO used a *trained* 750k checkpoint);
-from **cold start** (A1-core, 80k steps, untrained model) MPPI is just model-noise and buys no coverage over the
-policy prior. So "planning is a directed-exploration operator" is a **mid/late-training amplifier, not a
-cold-start bootstrap**. A1-full must therefore use a task/budget where the agent actually learns, and track
-coverage *across the training curve*.
+**Honest status of the flagship (this is trending NULL).** Across three tests, planning-as-a-directed-exploration
+operator is **so far unsupported**: (a) A1-core — from scratch on HopperHop, no coverage gain (but nothing
+learned); (b) A1-full — on WalkerRun (which *does* learn), no coverage gain *and* no return gain (π-only is even
+non-significantly ahead); (c) the one positive, the mechanism GO's 2.2× coverage, is an **inference-time
+same-weights ablation** (turn MPPI on/off at a fixed trained model) — it does *not* show that an agent *trained*
+with planning explores more during learning. And the famous HopperHop **367 vs 33** is TD-MPC2-vs-**PPO**
+(model/algorithm), not planning-vs-π-only within one agent — that edge was only **+1.7**. The one test that could
+still rescue the thesis is the **decisive** one: an *exploration-hard AND learnable* task (CartpoleSwingupSparse
+escape, or HopperHop at a longer budget), where the thesis actually predicts an effect. Until then, no GO.
 
 ## Progress log
+
+### 2026-07-01 — A1-full: second NULL, now on a task that *learns*
+Reran the de-risk on **WalkerRun** (which reaches real returns, unlike HopperHop@80k): 140k steps, PLAN vs
+PI-ONLY, n=3, coverage logged across the curve. Returns went 15.6 → 603.6 (mean 320; warmup ~30k), so both
+links are finally testable.
+
+- **Planning → coverage: NULL, mildly reversed — even after warmup.** Late-training PLAN vs PI-ONLY: distinct
+  bins 464 vs **501** (t=−2.75), projected entropy 4.81 vs 4.86, per-dim entropy 1.84 vs 1.87 (t=−3.11).
+  Planning does not become a coverage-increasing operator once the model is competent.
+- **Coverage → performance:** correlated (Pearson 0.72 overall, 0.48 post-warmup) — but that's the shared
+  training-progress trend (both arms rise together), not a planning effect.
+- **Per-arm final return: PLAN 479.6 ± 66.9 vs PI-ONLY 541.8 ± 65.0** — π-only is *non-significantly ahead*.
+  Planning improved **neither** coverage **nor** return.
+
+**Caveat that keeps the thesis alive (barely):** WalkerRun is a *dense* locomotion task, not
+exploration-bottlenecked — so the thesis doesn't even predict a planning advantage here. This mainly confirms the
+expected: no planning benefit when exploration isn't the bottleneck. But combined with A1-core, that's **two
+from-scratch nulls**, and the only positive evidence is an inference-time artifact. The flagship now hinges
+entirely on the **decisive** test — an *exploration-hard and learnable* task — which is the next thing to run.
 
 ### 2026-07-01 — A1-core: NULL from scratch, and it *reframes* the flagship
 The clean 2-arm de-risk finished (n=3, HopperHop, 80k steps, online coverage logging wired into the training

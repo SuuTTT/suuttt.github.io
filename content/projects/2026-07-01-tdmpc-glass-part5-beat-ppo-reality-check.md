@@ -19,6 +19,17 @@ tags: ["world-models", "TD-MPC2", "PPO", "abstraction", "manipulation", "dextero
 > nails down the boundaries. The one law that keeps recurring: *abstraction and priors buy learning speed, not a
 > higher ceiling.*
 
+> **Update (2026-07-03) — two claims in this post were later corrected by controlled experiments; see
+> [Part 7](../2026-07-03-tdmpc-glass-part7-five-bets-resolved) for the resolution.**
+> (1) **§2's "anti-collapse taxonomy" reversed.** Tested on a *pure* JEPA (no value loss — the right object), a
+> self-predictive latent **does not collapse** on DMControl state, pixels, or narrow/on-policy data; anti-collapse
+> ranges neutral-to-harmful, and the geometric-vs-value split was nav-specific, not a law
+> ([Thread D](../tdmpc-glass-thread-d-jepa-anticollapse-done-right)). (2) **§7's flagship went null.** The
+> "planning-as-exploration" bet does not survive a controlled planning-vs-policy-only test: planning is a
+> **sample-efficiency and exploitation** lever, not a directed-exploration operator
+> ([Thread A](../tdmpc-glass-thread-a-planning-exploration)). The recurring *speed-not-ceiling* law below still
+> holds — it's what survived.
+
 ## The method map (what wins, measured by learning speed)
 Four ways to get a policy, and — per LeCun's point that the honest axis is **how fast you learn** — where each
 one actually pays off, from all our Panda + DMControl runs:

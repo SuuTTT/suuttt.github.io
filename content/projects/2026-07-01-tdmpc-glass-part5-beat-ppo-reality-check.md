@@ -298,24 +298,24 @@ is our structural-entropy latent; TD-MPC2 is the vanilla self-predictive baselin
 |---|---:|---:|---:|
 | AcrobotSwingup | 324 ± 101 | 297 ± 10 | 268 @285M |
 | BallInCup | 731 ± 422 | 577 ± 471 | — |
-| CartpoleBalance | 945 ± 51 | 969 ± 11 | — |
-| CartpoleSwingup | 823 ± 36 | 828 ± 19 | — |
-| CheetahRun | 500 ± 274 | 599 ± 119 | **928** @285M |
-| FingerSpin | 950 ± 33 | 972 ± 13 | — |
+| CartpoleBalance | 945 ± 51 | **969 ± 11** | — |
+| CartpoleSwingup | 823 ± 36 | **828 ± 19** | — |
+| CheetahRun | 500 ± 274 | **599 ± 119** | **928** @285M |
+| FingerSpin | 950 ± 33 | **972 ± 13** | — |
 | FingerTurnEasy | 920 ± 85 | 856 ± 94 | — |
 | FingerTurnHard | 869 ± 171 | 775 ± 173 | **968** @285M |
 | HopperHop | **265 ± 64** | 197 ± 145 | 33 @285M |
 | HopperStand | 896 ± 36 | 417 ± 330 | — |
 | PendulumSwingup | 589 ± 342 | 389 ± 390 | — |
 | ReacherEasy | 980 ± 3 | 933 ± 89 | — |
-| ReacherHard | 883 ± 151 | 976 ± 3 | — |
-| WalkerRun | 652 ± 34 | 662 ± 8 | — |
+| ReacherHard | 883 ± 151 | **976 ± 3** | — |
+| WalkerRun | 652 ± 34 | **662 ± 8** | — |
 | WalkerStand | 979 ± 17 | 969 ± 15 | — |
 | WalkerWalk | 971 ± 12 | 919 ± 81 | 970 @79M |
 
 Read the two world-model columns side by side: **no systematic difference.** The gaps that look real
 (HopperStand 896 vs 417, PendulumSwingup 589 vs 389) are single-collapsed-seed artifacts — note the ±330/±390
-standard deviations — and they go *both* ways (glass higher on CheetahRun, ReacherHard, CartpoleBalance/Swingup,
+standard deviations — and they go *both* ways — **glass (SE) is bolded where it beats TD-MPC2: 6 of 16** (CheetahRun, ReacherHard, CartpoleBalance/Swingup,
 FingerSpin, WalkerRun). Averaged over the suite it's a wash; the only robust effect is glass costing **~1.35×
 wall-clock**. On a value-sufficient SimNorm latent — where a linear value-probe already gets \(R^2 \approx 0.999\)
 — an explicit representation abstraction has nothing left to add. **State abstraction is redundant, full stop.**

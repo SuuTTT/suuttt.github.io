@@ -60,7 +60,9 @@ here's where you can't," bought partly by catching ourselves red-handed. On to t
 `PandaPickCube` (MuJoCo Playground) is a 7-DoF Franka that must **reach** a small cube, **grasp** it, **lift**
 it, and **place** it upright at a target. We score *real* success, not shaped return: an episode counts only if
 
-$$\text{box\_target} \;=\; 1 - \tanh\!\big(5\,(0.9\,\lVert p_\text{err}\rVert + 0.1\,\theta_\text{err})\big) \;\ge\; 0.9,$$
+$$
+\text{box\_target} = 1 - \tanh\!\big(5\,(0.9\,\lVert p_\text{err}\rVert + 0.1\,\theta_\text{err})\big) \ge 0.9,
+$$
 
 i.e. the cube must end **both** at the target *position* and near-upright *orientation* — concretely
 \(0.9\,\lVert p_\text{err}\rVert + 0.1\,\theta_\text{err} \lesssim 0.02\). That `0.1·θ` term is the whole story below.

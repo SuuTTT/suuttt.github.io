@@ -223,6 +223,13 @@ should be *value-close*, destroying the value-sufficiency control needs. So the 
 > **nothing extra** for **value-based control** (SimNorm's built-in pressure + the value gradient suffice);
 > **never SE community structure** for either continuous case. Match the term to what you decode.
 
+**Important scoping caveat (raised in review — see §7.1).** The DMControl arm here runs on **TD-MPC2**, which is
+*not* a pure JEPA — its value/reward loss already anchors the latent, so "adding a term hurts value-based control"
+is really a **redundancy** result (a regularizer fighting an already value-sufficient latent), *not* a test of
+JEPA anti-collapse. Only the **nav (H-JEPA)** result — where the latent is genuinely self-predictive and collapses
+to eff_rank≈0 — is a real JEPA anti-collapse test. The clean JEPA-on-DMControl experiment (strip the value loss →
+pure self-predictive latent → probe) is Proposal D in §7.
+
 **Does the 0.954 "beat PPO"? No — and it shouldn't be read that way.** It's a *recovery* number: ~97% of the
 raw-obs ceiling (0.979), un-doing the collapse that cost VICReg 0.53→0.95, on an easy nav task where PPO was never
 run and would also succeed. The anti-collapse result is a **representation-learning** finding (which regularizer
@@ -337,10 +344,45 @@ PPO ran on a subset at 50–285M steps — budgets labelled, never fabricated.)*
 - All numbers are deterministic, disk-backed, multi-seed where stated; corrections stay visible in
   `bet2_null_results.md`.
 
-## 7. What's next
-- **Pixel observations** are the one genuinely-untested JEPA angle: everything here is low-dim *state*, where a
-  non-generative latent's advantage over a generative (Dreamer-style) world model barely shows. On pixels it
-  should — that's the next experiment worth standing up.
-- The conference write-up now has a crisp, honest thesis: *explicit abstraction and structured priors buy
-  sample-efficiency and practical capacity in specific regimes; they do not raise the representational ceiling,
-  and where a task simply needs many samples, high-throughput model-free RL wins.*
+## 7. Discussion & plan (after the supervisor review)
+
+A review reframed the whole thing. Two corrections and five proposals.
+
+### 7.1 Two corrections
+- **The real breakthrough is *exploration*, not learning speed.** TD-MPC2's HopperHop win (367 vs 33) isn't a
+  ceiling or even mainly a "speed" story — it's that **planning is a directed-exploration operator**: the model +
+  lookahead reach gaits PPO's on-policy sampling never finds. "Speed-not-ceiling" is the weak framing; "planning
+  buys exploration, and exploration unlocks final performance on exploration-hard tasks" is the strong one.
+- **Anti-collapse is a JEPA idea, and we ran it on the wrong object.** A *pure JEPA* has no reward/value loss, so
+  anti-collapse is load-bearing. **TD-MPC2 is not a pure JEPA** — its value loss already anchors the latent
+  (value-sufficient), so our DMControl anti-collapse study actually measured *redundancy* ("a relational
+  regularizer on a value-sufficient latent hurts"), **not** JEPA anti-collapse. Only the **nav H-JEPA** result is
+  a genuine JEPA anti-collapse test. The clean JEPA-on-DMControl test strips the value loss (Proposal D).
+
+### 7.2 Five proposals
+- **A — Planning as a directed-exploration operator (★ flagship).** *Isolate* it (coverage of TD-MPC2 planning vs
+  PPO on HopperHop/the escape frontier), *amplify* it (intrinsic-novelty MPPI, Plan2Explore-in-TD-MPC2), and
+  *direct* it with **SE-discovered subgoals** (run min-2D-SE on the replay-graph → communities/bottlenecks as
+  exploration targets). White space: nobody uses learned abstraction to *define the exploration targets a planner
+  pursues*, and we own SE + a planner + the exploration-difficulty frontier.
+- **B — "When does a behavioral prior help RL?" — finalize.** The 2-axis taxonomy (prior-fit × exploration-
+  difficulty) + escape-difficulty frontier is drafted and honest; finish figures and submit.
+- **C — Abstraction as variance-reduction.** glass beats TD-MPC2 on 6/16 tasks *on the mean by noise* but with
+  lower seed-variance on several — possibly a real "SE reduces collapse-seed variance / improves worst-case"
+  section. Cheap per-seed check first; report honestly either way.
+- **D — JEPA anti-collapse done *right*.** A **pure self-predictive JEPA** (no value loss) on DMControl, probed on
+  a geometric *and* a value readout — does the downstream-dependent taxonomy hold on a real JEPA? Then **pixels**,
+  where the information term is actually load-bearing (JEPA vs Dreamer).
+- **E — SE for structure *discovery*, not regularization.** We used SE to regularize the latent (redundant); its
+  real strength is community/hierarchy detection → subgoal/option discovery (merges into A). That's where "glass"
+  belongs after SE-as-representation proved a dead end.
+
+### 7.3 This week on the boxes
+- **b3060 (DMControl):** SE-arm finishing (D1, relabelled as a redundancy datapoint) → then **A1** exploration-
+  coverage (TD-MPC2 vs PPO vs pi-only) → **A2** intrinsic-novelty MPPI → **A3** SE-subgoal smoke.
+- **b3060b (Panda/pixels):** beat-PPO tail → **D3** pixel env + Dreamer baseline → **D2** pure-JEPA-on-DMControl setup.
+- **No-GPU / writing:** **C** per-seed robustness analysis; **B** finalize the taxonomy paper; draft the
+  planning-exploration proposal after a deep-research pass.
+- Priority if time-boxed: **A1 (de-risk the flagship) > C > B > D2/D3 > A2/A3.**
+
+Full brainstorm + arm-level plan: `PROPOSALS_and_weekly_plan.md` in the results repo.

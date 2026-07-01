@@ -1,7 +1,7 @@
 ---
-title: "TD-MPC-Glass, Part 5: A Method Map — State vs Symbol vs Planning vs PPO, and Where JEPA Fits"
+title: "TD-MPC-Glass, Part 5: A Method Map — State vs Behavioral vs Planning vs PPO, and Where JEPA Fits"
 date: 2026-07-01
-description: "The question driving the whole recent program: across all Panda + DMControl tasks, when does each of four approaches win — state abstraction (SE/glass), symbol abstraction (analytic controllers/TAMP), planning (TD-MPC2), and PPO — measured LeCun-style by learning speed, not just final score? Then the JEPA pivot: LeCun's argument that a non-generative predictor needs an information (anti-collapse) term and that hierarchical planning is where structure could pay off — and the experiments we ran on both, plus this week's beat-PPO reality check that pins down exactly where each method lives. The recurring law: abstraction and priors buy learning speed, not a higher ceiling."
+description: "The question driving the whole recent program: across all Panda + DMControl tasks, when does each of four approaches win — state abstraction (SE/glass), behavioral abstraction (analytic controllers/TAMP), planning (TD-MPC2), and PPO — measured LeCun-style by learning speed, not just final score? Then the JEPA pivot: LeCun's argument that a non-generative predictor needs an information (anti-collapse) term and that hierarchical planning is where structure could pay off — and the experiments we ran on both, plus this week's beat-PPO reality check that pins down exactly where each method lives. The recurring law: abstraction and priors buy learning speed, not a higher ceiling."
 layout: "post"
 showTableOfContents: true
 math: true
@@ -13,7 +13,7 @@ tags: ["world-models", "TD-MPC2", "PPO", "abstraction", "manipulation", "dextero
 
 > The real question behind this whole program isn't "can we beat PPO once" — it's a **map**: across all Panda and
 > DMControl tasks, *when does each family of methods win?* We've been comparing four — **state abstraction**
-> (structural-entropy / "glass" latents), **symbol abstraction** (analytic controllers, TAMP), **planning**
+> (structural-entropy / "glass" latents), **behavioral abstraction** (analytic controllers, TAMP), **planning**
 > (TD-MPC2), and plain **PPO** — and, following LeCun, scoring them by **learning speed**, not just final return.
 > This post lays out that map, the **JEPA** detour it took us on, and this week's beat-PPO reality check that
 > nails down the boundaries. The one law that keeps recurring: *abstraction and priors buy learning speed, not a
@@ -27,12 +27,23 @@ one actually pays off, from all our Panda + DMControl runs:
 |---|---|---|---|---|
 | **PPO** | model-free on-policy | huge throughput; **solves** sample-hungry high-DoF (Leap reorient **0.99**, PickCubeOrient **0.81**, CheetahRun 928 @285M) | sample-**inefficient**; **fails** exploration-hard (HopperHop **33**) | §3–5, benchmark |
 | **Planning — TD-MPC2** | self-predictive latent world-model + MPPI | 3–4 orders more **sample-efficient**; wins exploration-hard (HopperHop **367** vs 33) | slow wall-clock ⇒ can't reach the 100M+ steps dexterous tasks need ⇒ 0 there | §3–5b |
-| **Symbol — analytic/TAMP + residual** | hand-written skill / task-and-motion prior | **fast to competence** where the prior fits (Pendulum **836** vs 46; OpenCabinet **7×**; Reacher **3×**) | dead weight (**anchor**) where it doesn't (locomotion: vanilla wins 5/5); analytic-alone caps at contact physics (**0.37**) | §1 |
+| **Behavioral — analytic/TAMP + residual** | hand-written skill / task-and-motion prior | **fast to competence** where the prior fits (Pendulum **836** vs 46; OpenCabinet **7×**; Reacher **3×**) | dead weight (**anchor**) where it doesn't (locomotion: vanilla wins 5/5); analytic-alone caps at contact physics (**0.37**) | §1 |
 | **State — SE / "glass"** | structural-entropy structure on the latent | — (this was the bet) | **redundant**: glass ≈ TD-MPC2 on 16 DMC (value probe \(R^2\approx0.999\)); SE *hurts* continuous geometry; +1.35× wall-clock | §2, §5b |
 
-Read the "loses" column as the thesis: no state/symbol/planning prior *raises the ceiling* — each just shifts
+Read the "loses" column as the thesis: no state/behavioral/planning prior *raises the ceiling* — each just shifts
 **where on the speed axis** you land. PPO is the reference: slow-but-eventually-capable where it can explore,
 absent where it can't.
+
+**Two SOTA paradigms not in the map (honest status).** The obvious "planning" contenders from the recent
+literature are **generative jumpy world models** — Meta/FAIR's *Compositional Planning with Jumpy World Models*
+(CompPlan, built on TD-Flow) — and **flow-occupancy** methods — *InFOM* (Intention-conditioned Flow Occupancy
+Measure). We engaged both but they're not scored above, for different reasons: (a) the *jumpy* idea we
+**reproduced in our own stack** (jumpy/k-step TD-MPC2) and it was **redundant** — null-to-mildly-negative vs
+vanilla on return, sample-efficiency, and wall-clock, so it folds into the Planning row rather than being its own
+column; (b) the full **CompPlan/InFOM flow-occupancy reproduction** (OGBench cube-single + antmaze) we *stood up*
+— datasets, isolated envs, InFOM pretraining launched — but it's a genuine **multi-day** effort we paused when the
+JEPA/beat-PPO thread took priority, so we have **no completed head-to-head** to report. Flagging that rather than
+hand-waving it is the point.
 
 ## The JEPA detour (LeCun's three bets)
 Midway through, LeCun's JEPA talk reframed our own "glass" idea. His three claims map onto three experiments we ran:
@@ -279,30 +290,44 @@ That's a real, useful boundary — and arguably a better result than a fake beat
 The manipulation results above sit on top of a broader **DMControl suite benchmark** we've been running on a
 live dashboard (16 tasks × 3 seeds, glass / TD-MPC2 / PPO). Two headlines it settles:
 
-**(i) Representation abstraction is redundant.** Across **16 DMControl tasks (n=3–4)**, our structural-entropy
-"glass" latent shows **no systematic return difference from vanilla TD-MPC2** — ties within 95% CI on ~12/16,
-the few separations tracking single collapsed seeds in *both* directions. The only robust effect is that glass
-costs **~1.35× wall-clock**. On a value-sufficient self-predictive (SimNorm) latent — where a linear value-probe
-already gets \(R^2 \approx 0.999\) — an explicit representation abstraction has nothing left to add.
+**(i) Representation abstraction is redundant — the full 16-task sweep.** Here is *all* of it (final-checkpoint
+return, mean ± sd, n=4–5 seeds per cell; PPO = peak return at the labelled budget, subset only). The glass column
+is our structural-entropy latent; TD-MPC2 is the vanilla self-predictive baseline:
 
-**(ii) TD-MPC2 vs PPO on DMControl is a clean split by exploration difficulty** (peak return; note the wildly
-different budgets):
+| DMControl task | TD-MPC2 | tdmpc-glass (SE) | PPO (peak@budget) |
+|---|---:|---:|---:|
+| AcrobotSwingup | 324 ± 101 | 297 ± 10 | 268 @285M |
+| BallInCup | 731 ± 422 | 577 ± 471 | — |
+| CartpoleBalance | 945 ± 51 | 969 ± 11 | — |
+| CartpoleSwingup | 823 ± 36 | 828 ± 19 | — |
+| CheetahRun | 500 ± 274 | 599 ± 119 | **928** @285M |
+| FingerSpin | 950 ± 33 | 972 ± 13 | — |
+| FingerTurnEasy | 920 ± 85 | 856 ± 94 | — |
+| FingerTurnHard | 869 ± 171 | 775 ± 173 | **968** @285M |
+| HopperHop | **265 ± 64** | 197 ± 145 | 33 @285M |
+| HopperStand | 896 ± 36 | 417 ± 330 | — |
+| PendulumSwingup | 589 ± 342 | 389 ± 390 | — |
+| ReacherEasy | 980 ± 3 | 933 ± 89 | — |
+| ReacherHard | 883 ± 151 | 976 ± 3 | — |
+| WalkerRun | 652 ± 34 | 662 ± 8 | — |
+| WalkerStand | 979 ± 17 | 969 ± 15 | — |
+| WalkerWalk | 971 ± 12 | 919 ± 81 | 970 @79M |
 
-| task | TD-MPC2 | PPO | who wins the ceiling |
-|---|---:|---:|---|
-| **HopperHop** | **367** @2M | 33 @285M | **TD-MPC2 ~11×** — PPO never learns to hop |
-| **AcrobotSwingup** | **473** | 268 @285M | **TD-MPC2** — exploration-limited for PPO |
-| CheetahRun | 639 @1M | **928** @285M | PPO — dense/explorable, but at **~285× the samples** |
-| WalkerWalk | ~970 (tie region) | 970 @79M | tie — both solve |
-| FingerTurnHard | — | 968 @285M | PPO solves (dense) |
+Read the two world-model columns side by side: **no systematic difference.** The gaps that look real
+(HopperStand 896 vs 417, PendulumSwingup 589 vs 389) are single-collapsed-seed artifacts — note the ±330/±390
+standard deviations — and they go *both* ways (glass higher on CheetahRun, ReacherHard, CartpoleBalance/Swingup,
+FingerSpin, WalkerRun). Averaged over the suite it's a wash; the only robust effect is glass costing **~1.35×
+wall-clock**. On a value-sufficient SimNorm latent — where a linear value-probe already gets \(R^2 \approx 0.999\)
+— an explicit representation abstraction has nothing left to add. **State abstraction is redundant, full stop.**
 
-The pattern is the same one the whole post is about: **on exploration-bottlenecked tasks TD-MPC2's planning wins
-outright and at 1–2 orders of magnitude fewer samples; on dense/explorable tasks PPO reaches a higher (or tied)
-ceiling given its enormous throughput.** No world-model variant Pareto-dominates PPO — the sample-efficiency ↔
-wall-clock trade is fundamental, and the manipulation scan in §3–4 is just the high-DoF, sample-hungry end of
-this same axis (where PPO's throughput wins because the task needs 100M+ steps and TD-MPC2 can't practically get
-there). *(Live per-task CSVs + learning curves are on the dashboard; PPO was run on a subset at 50–285M steps —
-budgets labelled, never fabricated.)*
+**(ii) The PPO column is the exploration split.** Where PPO was run (the far-right column), the same law as the
+manipulation scan: **HopperHop** — TD-MPC2 265 vs PPO 33 (PPO never learns to hop, exploration-hard);
+**CheetahRun / FingerTurnHard** — PPO 928 / 968 wins the dense ceiling, but at **285M** steps vs TD-MPC2's ~1M;
+**WalkerWalk** — both solve (~970). So on DMControl too: TD-MPC2 wins exploration-bottlenecked tasks outright and
+1–2 orders of magnitude faster; PPO wins the dense ceiling given its throughput. No world-model variant
+Pareto-dominates PPO — the sample-efficiency ↔ wall-clock trade is fundamental, and §3–4's dexterous-manipulation
+scan is just the high-DoF end of the same axis. *(Full per-task learning curves live on the dashboard generator;
+PPO ran on a subset at 50–285M steps — budgets labelled, never fabricated.)*
 
 ## 6. Process notes (the part that keeps us honest)
 - **Two reward-gaming traps caught by scoring real success** — TD-MPC2's, and my own premature write-up. Return

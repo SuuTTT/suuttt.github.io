@@ -33,9 +33,11 @@ term should finally matter.
 | D2 — pure JEPA on state | ✅ done | **premise falsified — no collapse** |
 | D2-ext — fixed-λ, 3 tasks + online | ✅ done | **reversal FIRMED** |
 | D3 — pixel JEPA | ✅ done | **NULL — same picture as state** |
-| D1 — SE-arm on TD-MPC2 (redundancy) | 🟡 running (~4/18) | pending (re-check at fixed λ) |
+| D1 — SE-arm on TD-MPC2 (redundancy) | ✅ done | **SE hurts like uniformity; SE+unif no synergy** |
+| open cell — narrow/on-policy data collapse? | ✅ done | **NULL — narrow data doesn't collapse pure JEPA** |
 
-**Net: Thread D is essentially resolved, and it *reverses* the Part-5 anti-collapse story.**
+**Net: Thread D is resolved. It *reverses* the Part-5 anti-collapse story, and the collapse regime turns out to
+be narrower than any data-distribution story: only the true closed-loop online (nav) setting collapses.**
 
 ## The finding (D2 + D2-ext + D3)
 
@@ -47,6 +49,40 @@ high-dim pixel regime his argument targets. The "downstream-dependent taxonomy" 
 readouts, hurts value readouts) was **specific to the narrow nav-collapse regime**, not a general law.
 
 ## Progress log
+
+### 2026-07-01 — D1 done + the open cell closed: the collapse regime is *narrower* than "on-policy data"
+Two harvests land together and finish the thread.
+
+**D1 — SE arm on TD-MPC2 (the correctly-scoped redundancy datapoint), n=3, L16 collapse config.** Return-AUC vs
+the known default/uniformity baselines:
+
+| task | default | uniformity | **SE** | **SE+unif** |
+|---|---|---|---|---|
+| CheetahRun | 58.9 | 36.6 | 23.4 | 29.0 |
+| WalkerWalk | 293.8 | 89.9 | 110.3 | 62.5 |
+| FingerSpin | 249.4 | 171.8 | 214.4 | 63.8 |
+
+**SE hurts value-based control just like uniformity** (default > SE on all three), and **SE + uniformity is
+*worse* than either alone** — no synergy. Importantly SE is *not* catastrophically over-weighted here (FingerSpin
+SE 214 ≈ default 249, not nuked) — so the D2 grad-match artifact does **not** apply on a value-anchored latent,
+exactly as D2 predicted (‖∇se‖≈‖∇unif‖ there). Confirms the redundancy law: on a value-sufficient latent the
+right anti-collapse is *nothing extra*; any relational term (uniformity, SE, or both) hurts.
+
+**Open cell — does narrow / on-policy data collapse a pure JEPA where broad data doesn't? NULL** (WalkerWalk,
+n=2, partial). A distribution-width sweep (broad-random → broad-smooth → on-policy(ARS) → narrow top-return
+2–25%) on the same `none` arm. eff_rank never approaches 0 (stays 10–22); geometric decodability holds
+(0.5–0.83). Value-R² *does* fall as the buffer narrows (0.11 → −0.05), but that mirrors the narrow buffers'
+intrinsically low value variance (raw-obs value-R² is also ~0.04–0.11 there) — a property of the *data*, not
+encoder collapse. So the nav H-JEPA collapse (eff_rank≈0) is **not** reproduced by data-distribution width alone.
+(Honest caveats: two pipeline bugs — ReacherEasy width buffers never generated, broad-random train arm hit a
+shell word-split; "on-policy" here is an ARS refit, not a true closed-loop value-optimizing agent. That last,
+genuinely-on-policy closed-loop cell is the only condition still untested.)
+
+**Thread D, closed.** Pure self-predictive JEPA does not collapse on broad DMControl (state or pixels) *or* on
+narrow/on-policy-ARS data; anti-collapse is neutral-to-harmful throughout; on a value-anchored TD-MPC2 latent all
+relational terms (uniformity, SE, SE+unif) hurt. The one setting that *did* collapse — the nav closed-loop online
+H-JEPA — is not explained by data width, so the true collapse trigger is the value/goal closed loop itself, not
+the breadth of the data. That is the honest remaining open question.
 
 ### 2026-07-01 — D3 (pixels): NULL — anti-collapse not load-bearing on pixels either
 Rendered 64×64×3 pixel DMControl (via mujoco_playground MJX dynamics + an EGL renderer, since dm_control's loader

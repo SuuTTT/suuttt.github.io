@@ -35,9 +35,12 @@ term should finally matter.
 | D3 — pixel JEPA | ✅ done | **NULL — same picture as state** |
 | D1 — SE-arm on TD-MPC2 (redundancy) | ✅ done | **SE hurts like uniformity; SE+unif no synergy** |
 | open cell — narrow/on-policy data collapse? | ✅ done | **NULL — narrow data doesn't collapse pure JEPA** |
+| final cell — is closed-loop feedback the trigger? | ✅ done | **PARTIAL — a soft amplifier, not a clean trigger** |
 
-**Net: Thread D is resolved. It *reverses* the Part-5 anti-collapse story, and the collapse regime turns out to
-be narrower than any data-distribution story: only the true closed-loop online (nav) setting collapses.**
+**Net: Thread D is fully resolved. It *reverses* the Part-5 anti-collapse story; the collapse regime is narrower
+than any data-distribution story; and the one setting that did collapse (closed-loop nav) is only *softly*
+explained by the loop — the latent is chronically low-rank there regardless, and, either way, representation
+collapse stays decoupled from control (success is identical with or without a dead latent).**
 
 ## The finding (D2 + D2-ext + D3)
 
@@ -49,6 +52,28 @@ high-dim pixel regime his argument targets. The "downstream-dependent taxonomy" 
 readouts, hurts value readouts) was **specific to the narrow nav-collapse regime**, not a general law.
 
 ## Progress log
+
+### 2026-07-01 — the final cell: closed-loop feedback is a *soft amplifier*, not a clean trigger
+The one setting that ever collapsed was the closed-loop online nav H-JEPA. Direct controlled A/B on the *same*
+architecture (matched 6094 updates, \(n{=}3\)), varying only the data-collection policy: **online** (closed-loop,
+policy co-evolves with the representation) vs **offline** (fixed random-policy buffer, loop broken).
+
+- **Robust signals** (mid-training eff-rank floor + a \(z\to\)state readout-R²): online hits a dead latent
+  (eff-rank ≈ \(10^{-7}\)) on **3/3** seeds with readout R² ≈ 0.19; offline on only **1/3**, keeping 2× more
+  decodable structure (R² ≈ 0.41). Breaking the loop **mitigates** collapse — so closed-loop feedback *is* a real
+  driver.
+- **But it's not a clean trigger, and the metric fights itself.** The *final-eval* eff-rank (noisy, one online
+  seed bounces to 1.66) actually reads online 0.55 > offline 0.42 — backwards from the trajectory floor. Both arms
+  are *chronically* low-rank on the 4-dim nav task (offline nowhere near the eff-rank 10–22 of broad DMControl),
+  so much of the low rank is architecture/task, not the loop. The strong binary hypothesis is a **null**; the weak
+  "closed-loop deepens the transient collapse" gets **partial, fragile** support.
+- **And it doesn't matter for control:** task success is **identical (~0.64)** with or without a dead latent —
+  representation health is decoupled from performance, the same thing every nav probe has found.
+
+So the honest close on Thread D: the nav collapse is not cleanly explained by any single lever — closed-loop
+feedback is at most a soft amplifier of a latent that is low-rank anyway, and the collapse is invisible to the
+policy. (Caveats: offline used a random, not frozen-expert, buffer; a ≥300k budget with more seeds would sharpen
+whether the residual rank-loss is coverage or architecture.) That is the last open question in the thread, closed.
 
 ### 2026-07-01 — D1 done + the open cell closed: the collapse regime is *narrower* than "on-policy data"
 Two harvests land together and finish the thread.

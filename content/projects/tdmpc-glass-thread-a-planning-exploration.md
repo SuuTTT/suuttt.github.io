@@ -46,20 +46,22 @@ targets a planner pursues**. We already own SE, a working planner, and a control
 | A1 mechanism (same-weights ablation, **trained** ckpt) | ✅ done | **GO (n=1 task)** — planning covers 2.2× more cells |
 | A1-core (planning vs π-only, **from scratch**, w/ coverage) | ✅ done | **NULL (mildly reversed)** — no coverage gain at 80k |
 | A1-full (learnable task, coverage across curve) | ✅ done | **coverage NULL/reversed, but sample-efficiency GO** (WalkerRun) |
-| A1-decisive (exploration-hard **and** learnable) | 🟡 running | does planning's exploitation also *find* sparse reward? |
-| A2 (novelty-seeking MPPI) | ⏳ queued | — |
-| A3 (SE-subgoal discovery) | ⏳ queued | — |
+| A1-decisive (exploration-hard **and** learnable) | ✅ done | **NULL** — policy-only discovers sparse reward equally (earlier) |
+| A2 (novelty-seeking MPPI) | ⏸ deprioritized | flagship thesis refuted |
+| A3 (SE-subgoal discovery) | ⏸ deprioritized | — |
 
-**Honest status of the flagship — the *mechanism* is wrong, but planning still helps.** The sharpest result:
-on WalkerRun (which learns), planning does **not** broaden state coverage — post-competence it *narrows* it
-(directed **exploitation** onto the running-gait manifold), while the stochastic policy prior disperses wider.
-So "planning is a directed-**exploration** operator" is **false on the coverage mechanism**. *But* planning is
-still a real **sample-efficiency** lever: its training return leads π-only by +130–160 through the whole
-competence phase (50k: 335 vs 185) and converges to the same ceiling by ~120k — the campaign's speed-not-ceiling
-law, not exploration-via-coverage. And crucially, **coverage does not mediate the benefit** (planning covers
-*less* yet learns *faster*). The remaining open question is the **decisive** one: on an *exploration-hard AND
-learnable* sparse task (CartpoleSwingupSparse, running now), does planning's exploitation *also* help it discover
-the reward when policy-only stalls? That is the only place a genuine "exploration" claim could still live.
+**Verdict on the flagship: the "planning-as-exploration" thesis is refuted; the honest result is
+sample-efficiency + exploitation.** Three controlled plan-vs-π-only tests now agree that planning is **not** a
+directed-*exploration* operator: (a) A1-core (HopperHop@80k) — no coverage gain; (b) A1-full (WalkerRun) —
+planning *narrows* coverage (exploitation) yet learns ~1.5–2× faster; (c) **A1-decisive (CartpoleSwingupSparse,
+sparse/exploration-hard)** — a policy-only agent discovers the sparse reward **3/3, even slightly earlier** than
+planning (140k vs 157k), so planning does *not* unlock exploration a policy-only agent misses. What planning
+*does* buy is repeatable: **faster time-to-competence and higher/steadier post-discovery returns**
+(A1-decisive final 540 vs 331). The proposed *new* paper — "exploration is the real breakthrough over PPO" —
+does **not** survive a controlled test; the HopperHop 367-vs-33 is TD-MPC2-vs-**PPO** (model/algorithm), not
+planning-vs-π-only. The salvageable, honest contribution is the **speed/exploitation** characterization, which
+folds into the [Thread B taxonomy](../tdmpc-glass-thread-b-behavioral-prior-taxonomy) — not a novel exploration
+mechanism. A2/A3 (amplify/direct exploration) are deprioritized: there's no exploration effect to amplify.
 
 ## Progress log
 

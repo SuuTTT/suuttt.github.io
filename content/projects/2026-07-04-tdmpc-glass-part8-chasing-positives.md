@@ -20,14 +20,14 @@ tags: ["world-models", "TD-MPC2", "PPO", "exploration", "planning", "hierarchy",
 
 | bet / test | verdict |
 |---|---|
-| **Planning-as-exploration → the real question** | **POSITIVE (reframe): the *world model* is the exploration lever** |
+| **Planning-as-exploration → the real question** | **POSITIVE (sharpened 07-02): PPO's exploration wall is real but *on-policy-specific*; the world model buys ~5× sample-efficiency + ~2× level over SAC** |
 | **Learned hierarchy (feudal) vs flat** | **POSITIVE, localized** — wins on multi-room, not open rooms |
 | A2 — novelty-seeking MPPI | null / harmful |
 | D — SE as *structure* (not penalty) | null |
 | E — SE-subgoal option discovery | null |
 | MiniGrid — PPO+RND on hard-exploration | null |
 
-## The win: the world model, not the planner, is what explores
+## The win, sharpened: the wall is real — and it's an on-policy pathology
 
 Part 7 showed planning (MPPI) is *not* a directed-exploration operator — a policy-only ablation of TD-MPC2
 explored/discovered just as well. That left the real question open: **why does TD-MPC2 crush PPO on `HopperHop`
@@ -51,25 +51,36 @@ to TD-MPC2's level would take tens of billions of steps. A genuine exploration w
 with the planning-vs-policy null, this pins the mechanism:
 
 > **Planning (MPPI) is a *pruning / exploitation* operator; the *world model* (learned latent dynamics + value
-> from imagined rollouts) is the *exploration* lever.** It lets TD-MPC2 discover a gait that model-free PPO cannot
-> find at any practical budget.
+> from imagined rollouts) is what lets TD-MPC2 discover the gait that on-policy PPO cannot find at any practical
+> budget** — though, as the SAC control below shows, it is not the *only* escape route.
 
 This reframes the whole flagship honestly: the exploration advantage is real, but it lives in the **model**, not
 the **planner**.
 
-**Scope caveat (added 2026-07-02, review):** the model-free arm here is *on-policy PPO*. No off-policy,
-entropy-driven baseline (SAC/TD3) has been run, so the sharpest defensible claim today is "the world model explores
-where **on-policy PPO** is walled," not "where model-free RL is walled." A SAC-on-HopperHop control is the single
-test that could most cheaply overturn (or firm) the strong version.
+**The SAC control (ran 2026-07-02, n=3 — the review-mandated decider).** We ran brax SAC (mujoco_playground's
+tuned DMC config, audited; byte-identical MJX env) for 3 seeds × 5M steps. **Peaks 207 / 235 / 274 — all three
+seeds cross 200 within 5M steps**, the threshold PPO's five seeds never touched in 472M. So the strong reading
+("model-free RL is walled") is **refuted**, and the honest sharpened claim is:
 
-*(Two confirmations running: a **generalization** sweep — does the wall hold on Pendulum / Finger / BallInCup? —
-and a **per-head ablation** to say which of the ~5 world-model nets carries it. Interim from disk, 2026-07-02: the
-wall does **not** simply generalize — on FingerTurnHard PPO reaches ~975 ≈ TD-MPC2's level, i.e. no wall; on
-Pendulum 2/3 PPO seeds wall hard but the best seed catches up (852 vs anchor 911), *and* we found an upstream
-config bug (a `PendulumSwingUp`-vs-`PendulumSwingup` case mismatch silently skips the official Pendulum-tuned
-override), so the Pendulum cell is not clean. Early read: the exploration wall is **task-specific to gait-discovery
-regimes like HopperHop**, which sharpens rather than weakens the claim. Full verdict + per-head ablation fold in
-when the runs finish.)*
+> **The exploration wall is an *on-policy* pathology.** Off-policy replay + entropy exploration (SAC) escapes it.
+> What the world model buys — cleanly, same env — is **sample-efficiency and level**: TD-MPC2 reaches ~282
+> (n=4 mean, best 367) at **1M** steps, above SAC's 5M-step level (~5× sample-efficiency), and ~480–520 by 3.9M
+> vs SAC's ~239 at 5M (~2× attained level at matched budget). PPO stays categorically walled.
+
+This lands the campaign back on its own law from an unexpected direction: the "exploration" advantage decomposes
+into an on-policy failure (PPO's) plus a model-based *efficiency* advantage (TD-MPC2's) — the world model is a
+sample-efficiency-and-level lever, not a unique key to the gait.
+
+**The generalization sweep is also final: the wall does not generalize — it is task-specific.** Verdict from
+`analyze_ppowall.py` over all runs: PPO caught up to TD-MPC2 on all scored tasks. FingerTurnHard: PPO 971/975/971
+≈ TD-MPC2 984 (no wall, 3/3). Pendulum: best seed catches up (852 vs 961), 2/3 seeds walled — but the cell is
+confounded (a `PendulumSwingUp`-vs-`PendulumSwingup` case mismatch in upstream mujoco_playground silently skips
+the Pendulum-tuned override). BallInCup: discovery-luck on *both* algorithms (PPO 1/3 seeds solve at ~967;
+TD-MPC2 itself 1/2 at ~975) — not a wall. So the wall is **specific to the gait-discovery regime** (HopperHop),
+which sharpens the claim: on-policy PPO fails at gait discovery specifically, not at hard control generally.
+*(Still running: the per-head WM ablation on HopperHop + CheetahRun — which of the ~5 nets carries the efficiency
+advantage; early CheetahRun read: ablating the TD/value loss is catastrophic, the reward head matters only for
+planning, consistency is substantial.)*
 
 ## The localized positive: hierarchy helps where it should
 

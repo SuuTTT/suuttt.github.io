@@ -21,7 +21,7 @@ tags: ["world-models", "TD-MPC2", "PPO", "exploration", "planning", "hierarchy",
 | bet / test | verdict |
 |---|---|
 | **Planning-as-exploration → the real question** | **POSITIVE (sharpened 07-02): PPO's exploration wall is real but *on-policy-specific*; the world model buys ~5× sample-efficiency + ~2× level over SAC** |
-| **Learned hierarchy (feudal) vs flat** | **POSITIVE, localized** — wins on multi-room, not open rooms |
+| **Learned hierarchy (feudal) vs flat** | **RE-ATTRIBUTED (07-02)**: dense shaping alone matches it (shaped-flat 3/6 ≈ feudal 4/6); surviving claim = the hierarchy *self-generates* its dense signal |
 | A2 — novelty-seeking MPPI | null / harmful |
 | D — SE as *structure* (not penalty) | null |
 | E — SE-subgoal option discovery | null |
@@ -63,9 +63,12 @@ seeds cross 200 within 5M steps**, the threshold PPO's five seeds never touched 
 ("model-free RL is walled") is **refuted**, and the honest sharpened claim is:
 
 > **The exploration wall is an *on-policy* pathology.** Off-policy replay + entropy exploration (SAC) escapes it.
-> What the world model buys — cleanly, same env — is **sample-efficiency and level**: TD-MPC2 reaches ~282
-> (n=4 mean, best 367) at **1M** steps, above SAC's 5M-step level (~5× sample-efficiency), and ~480–520 by 3.9M
-> vs SAC's ~239 at 5M (~2× attained level at matched budget). PPO stays categorically walled.
+> What the world model buys — cleanly, same env — is **sample-efficiency**: TD-MPC2 reaches ~282 (n=4 mean,
+> best 367) at **1M** steps, above SAC's 5M-step level (~5×), and ~480 (n=2, final) at 5M vs SAC's ~239 at 5M.
+> PPO stays categorically walled. *(Level update, 2026-07-02: an earlier version claimed "~2× attained level at
+> matched budget." The 20M SAC runs killed the robustness of that: seeds span **277 / 414 finals at 20M, with a
+> third seed at 564 by 12.8M — above TD-MPC2's anchor**. There is no reliable level gap at larger budgets;
+> the world model's robust advantage is efficiency, full stop.)*
 
 This lands the campaign back on its own law from an unexpected direction: the "exploration" advantage decomposes
 into an on-policy failure (PPO's) plus a model-based *efficiency* advantage (TD-MPC2's) — the world model is a
@@ -73,11 +76,12 @@ sample-efficiency-and-level lever, not a unique key to the gait.
 
 **The generalization sweep is also final: the wall does not generalize — it is task-specific.** Verdict from
 `analyze_ppowall.py` over all runs: PPO caught up to TD-MPC2 on all scored tasks. FingerTurnHard: PPO 971/975/971
-≈ TD-MPC2 984 (no wall, 3/3). Pendulum: best seed catches up (852 vs 961), 2/3 seeds walled — but the cell is
-confounded (a `PendulumSwingUp`-vs-`PendulumSwingup` case mismatch in upstream mujoco_playground silently skips
-the Pendulum-tuned override). BallInCup: discovery-luck on *both* algorithms (PPO 1/3 seeds solve at ~967;
-TD-MPC2 itself 1/2 at ~975) — not a wall. So the wall is **specific to the gait-discovery regime** (HopperHop),
-which sharpens the claim: on-policy PPO fails at gait discovery specifically, not at hard control generally.
+≈ TD-MPC2 984 (no wall, 3/3). Pendulum: originally 2/3 seeds walled, but the cell was confounded by an upstream
+`PendulumSwingUp`-vs-`PendulumSwingup` case mismatch that silently skipped the tuned override — **re-running with
+the override applied (2026-07-02, n=2) gives peaks 842.5 / 830.9: both catch up. The "walled" Pendulum seeds were
+the bug.** BallInCup: discovery-luck on *both* algorithms (PPO 1/3 seeds solve at ~967; TD-MPC2 itself 1/2 at
+~975) — not a wall. With no confounded cells remaining, the wall is **specific to the gait-discovery regime**
+(HopperHop): on-policy PPO fails at gait discovery specifically, not at hard control generally.
 **Which net carries it? The per-head ablation (CheetahRun done, n=2; HopperHop running, n=4 queued).** Zeroing one
 loss term at a time (mask verified live): full = MPPI 738 / pi 782. Ablating **value** → 16 / 12 (catastrophic,
 kills planner *and* policy); **reward** → MPPI 5 but pi **761** (planning-only, partly by construction — MPPI
@@ -108,6 +112,14 @@ intrinsic dense signal) hasn't been run, so the clean claim is "a learned 2-leve
 dense shaping* beats sparse flat TD3 at matched env-steps," not "hierarchy per se." The feudal arm also takes 2
 gradient updates per env step (LL+HL) vs flat's 1 — matched per-network, not in total compute. (2) 4/6 vs 0/6 is
 Fisher-exact p ≈ 0.03 one-sided — real but thin; one flipped seed would un-signify it.
+
+**🚩 RESOLVED (2026-07-02, the shaped-flat control ran, n=6): the positive re-attributes to dense shaping.**
+Flat TD3 given dense potential-based shaping toward the true goal solves fourroom **3/6 seeds (finals 1,1,1,0,0,0)
+≈ feudal's 4/6** — on the maze sparse flat never solved. So what carried the win was the *dense signal*, not the
+hierarchy. The "learned hierarchy beats flat" claim is retired. The surviving claim is narrower and still worth
+having: **the hierarchy *self-generates* its dense learning signal** — feudal needed no privileged goal
+information, while this control was handed the true goal. That independently replicates Nachum et al. (2019),
+who found most of HRL's benefit reproduces on flat agents given better exploration/shaping.
 
 ## The nulls (honest, and consistent)
 

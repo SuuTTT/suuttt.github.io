@@ -96,6 +96,22 @@ mechanism. A2/A3 (amplify/direct exploration) are deprioritized: there's no expl
 
 ## Progress log
 
+### 2026-07-02 — RESOLVED: TD-MPC2's HopperHop win is an *exploration* advantage from the world model (not sample-efficiency)
+The direct test we'd been missing. Ran **PPO on HopperHop at a large budget** (mujoco_playground brax PPO, tuned config, n=5, up to **472M env-steps/seed ≈ 94× TD-MPC2's ~5M-to-367**):
+
+| metric | value |
+|---|---|
+| PPO peak reward (mean / best) | **40.0 / 53.8** |
+| seeds crossing 200 or 367 | **0 / 5** (never) |
+| TD-MPC2 reference | ~367 in a few M steps |
+
+**Verdict: exploration wall.** PPO given ~94× the samples still peaks ~7× below TD-MPC2 and never approaches the gait — a genuine exploration *failure*, not mere inefficiency. This **flips the earlier "likely sample-efficiency" guess** and resolves the two open gaps together:
+- **plan-vs-π-only (within TD-MPC2): null** — MPPI lookahead adds no exploration beyond the world-model-trained policy.
+- **TD-MPC2-vs-PPO (model-based vs model-free): the world model *is* the exploration enabler** — it discovers a gait that model-free PPO can't find at any practical budget.
+
+So the honest, reconciled picture: **planning (MPPI) is a pruning/exploitation operator (null for exploration); the *world model* is what buys exploration** on hard-exploration tasks like HopperHop. The per-head ablation (running) will localize *which* world-model component (dynamics / reward / value) carries it. `wm-redundancy-paper` ledger has the per-seed numbers.
+
+
 ### 2026-07-01 — A1-full: coverage NULL, but a *sample-efficiency* win — and a correction to my own first read
 Reran the de-risk on **WalkerRun** (which reaches real returns, unlike HopperHop@80k): 140k steps, PLAN vs
 PI-ONLY, n=3, coverage logged across the curve (warmup ~30k). Both links are finally testable — and the story is

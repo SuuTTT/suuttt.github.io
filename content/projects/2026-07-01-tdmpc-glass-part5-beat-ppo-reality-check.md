@@ -39,7 +39,7 @@ one actually pays off, from all our Panda + DMControl runs:
 | **PPO** | model-free on-policy | huge throughput; **solves** sample-hungry high-DoF (Leap reorient **0.99**, PickCubeOrient **0.81**, CheetahRun 928 @285M) | sample-**inefficient**; **fails** exploration-hard (HopperHop **33**) | §3–5, benchmark |
 | **Planning — TD-MPC2** | self-predictive latent world-model + MPPI | 3–4 orders more **sample-efficient**; wins exploration-hard (HopperHop **367** vs 33) | slow wall-clock ⇒ can't reach the 100M+ steps dexterous tasks need ⇒ 0 there | §3–5b |
 | **Behavioral — analytic/TAMP + residual** | hand-written skill / task-and-motion prior | **fast to competence** where the prior fits (Pendulum **836** vs 46; OpenCabinet **7×**; Reacher **3×**) | dead weight (**anchor**) where it doesn't (locomotion: vanilla wins 5/5); analytic-alone caps at contact physics (**0.37**) | §1 |
-| **State — SE / "glass"** | structural-entropy structure on the latent | — (this was the bet) | **redundant**: glass ≈ TD-MPC2 on 16 DMC (value probe \(R^2\approx0.999\)); SE *hurts* continuous geometry; +1.35× wall-clock | §2, §5b |
+| **State — SE / "glass"** | structural-entropy structure on the latent | — (this was the bet) | **redundant**: glass ≈ TD-MPC2 on 16 DMC (matched benchmark, n=3–4; the old \(R^2\approx0.999\) probe evidence was retracted); SE *hurts* continuous geometry; +1.35× wall-clock | §2, §5b |
 
 Read the "loses" column as the thesis: no state/behavioral/planning prior *raises the ceiling* — each just shifts
 **where on the speed axis** you land. PPO is the reference: slow-but-eventually-capable where it can explore,
@@ -335,8 +335,11 @@ Read the two world-model columns side by side: **no systematic difference.** The
 (HopperStand 896 vs 417, PendulumSwingup 589 vs 389) are single-collapsed-seed artifacts — note the ±330/±390
 standard deviations — and they go *both* ways — **glass (SE) is bolded where it beats TD-MPC2: 6 of 16** (CheetahRun, ReacherHard, CartpoleBalance/Swingup,
 FingerSpin, WalkerRun). Averaged over the suite it's a wash; the only robust effect is glass costing **~1.35×
-wall-clock**. On a value-sufficient SimNorm latent — where a linear value-probe already gets \(R^2 \approx 0.999\)
-— an explicit representation abstraction has nothing left to add. **State abstraction is redundant, full stop.**
+wall-clock**. On a value-sufficient SimNorm latent an explicit representation abstraction has nothing left to
+add — a conclusion carried by the **16 direct nulls of the matched benchmark**, not by the old
+\(R^2\approx0.999\) value-probe reading, which our own
+[postmortem](../2026-06-17-tdmpc-glass-r2-criterion-postmortem) retracted as saturated-by-construction.
+**State abstraction is redundant, full stop.**
 
 **(ii) The PPO column is the exploration split.** Where PPO was run (the far-right column), the same law as the
 manipulation scan: **HopperHop** — TD-MPC2 265 vs PPO 33 (PPO never learns to hop, exploration-hard);

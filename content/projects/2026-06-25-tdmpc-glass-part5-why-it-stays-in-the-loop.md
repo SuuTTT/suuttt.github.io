@@ -11,6 +11,12 @@ tags: ["world-models", "TD-MPC2", "PPO", "abstraction", "residual-RL", "manipula
 
 {{< katex >}}
 
+> **⚠ Reconciliation note (2026-07-02):** the 0.79-vs-0.81 "near-tie" below came from the milestone-shaped
+> variant; the later canonical matched-harness study (base reward, n=3, CI-separated) reads **0.716 &lt; 0.810 —
+> vanilla PPO wins the asymptote**, residual ~1.6× faster. The "planning +8% on HopperHop" quoted in §6 was later
+> measured at **+1.7 return points** (n=31) in the controlled plan-vs-π test. The speed-not-ceiling conclusion
+> stands; those two numbers don't.
+
 > Continuing from the [last update](https://suuttt.github.io/projects/2026-06-24-tdmpc-glass-part4-jumpy-to-beat-ppo/):
 > the headline was a heuristic-in-the-loop residual that **ties PPO (0.79 ± 0.01 vs 0.81) and reaches competence
 > ~1.7× faster**. This post spells out the method (the loop and the analytic controller), shows *why* the

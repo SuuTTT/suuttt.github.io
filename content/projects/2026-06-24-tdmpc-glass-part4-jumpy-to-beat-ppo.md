@@ -115,7 +115,11 @@ scored on real success (`box_target ≥ 0.9`, \(n=256\)):
 at full standing authority, executed as \( a = \mathrm{clip}(a_{\text{HL}}(s,z) + \alpha\,\pi_{\text{res}}(s,z)) \)
 — reaches **0.79, a robust near-tie with PPO's 0.81**, and crosses the competence threshold **~1.3–1.7× faster**
 (≈20–26M vs 32.8M env-steps). On the sample-efficiency axis that matters for real robots, the abstraction-in-loop
-**beats** PPO; on raw peak it is a near-tie. The negatives did the real work: **distillation fails** because the
+**beats** PPO; on raw peak it is a near-tie. *(Reconciliation note, 2026-07-02: the later canonical base-reward,
+matched-harness replication — round 7, n=3, CI-separated both ways — reads **residual 0.716 ± 0.014 &lt; vanilla
+PPO 0.810 ± 0.006**, i.e. PPO wins the asymptote outright with the residual ~1.6× faster. The 0.79 here comes
+from this post's milestone-shaped training variant; the 0.716-vs-0.810 study supersedes it as the clean
+comparison. Both agree on the direction that survived the campaign: the prior buys speed, not ceiling.)* The negatives did the real work: **distillation fails** because the
 abstraction is non-Markov (its action depends on hidden phase state); **annealing authority backfires**
 (non-stationary → collapse); a **learned authority-gate underperforms** uniform full authority. The winner is
 the simplest in-loop form.

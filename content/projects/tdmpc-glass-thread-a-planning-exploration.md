@@ -59,12 +59,24 @@ CartpoleSwingupSparse (A1-decisive). So: *planning prunes exploration — an ass
 liability for sparse discovery.* This directly motivates **A2 (running)**: add an intrinsic-novelty term so the
 pruning points **toward** novelty (Plan2Explore-in-TD-MPC2), and see if it flips the sparse-discovery result.
 
-**Two things we have *not* tested yet (and should):**
-1. **TD-MPC2 coverage vs PPO coverage, head-to-head.** Every controlled test above is PLAN vs π-ONLY *within*
-   TD-MPC2. The famous HopperHop **367 vs 33** is TD-MPC2-vs-PPO, but we isolated only that *planning* isn't the
-   cause (plan-vs-π edge +1.7) — we never ran TD-MPC2 vs PPO on coverage/discovery directly. So "TD-MPC2 explores
-   better than PPO" is genuinely untested; the likely real reason it wins HopperHop is **sample-efficiency**, not
-   exploration.
+**What the π-only ablation does and doesn't isolate (important scoping).** Verified from the code: the `pi` vs
+`plan` switch only changes the *data-collection action* (MPPI lookahead vs the amortized policy prior) and the
+logging — it *never* touches the loss/update. So **both arms train the full world model identically** (encoder +
+latent dynamics + reward head + Q/value + policy prior); the π-only agent is *not* model-free, it's the same world
+model acting without lookahead. Therefore the null means "MPPI lookahead adds no exploration beyond the
+world-model-trained policy" — it does **not** test whether the **world model itself** is the driver, because both
+arms share it. That is very likely where TD-MPC2's real edge lives.
+
+**Three things we have *not* tested yet (and should):**
+1. **TD-MPC2 coverage vs PPO coverage, head-to-head** (the world-model test at coarse grain). Every controlled
+   test above is PLAN vs π-ONLY *within* TD-MPC2, so all share the world model. The famous HopperHop **367 vs 33**
+   is TD-MPC2-vs-PPO, but we isolated only that *planning* isn't the cause (plan-vs-π edge +1.7). So "TD-MPC2
+   explores better than PPO" is genuinely untested; the likely real reason it wins HopperHop is
+   **sample-efficiency from the world model**, not exploration — which the queued **PPO-at-large-budget** run
+   (does PPO reach 367 given enough samples?) and a **TD-MPC2-vs-PPO coverage** run will settle.
+1b. **Which world-model head is load-bearing?** A finer ablation — drop the reward predictor / the
+   value-from-rollouts / the latent-dynamics term one at a time — would pinpoint *which* of the ~5 nets actually
+   drives the sample-efficiency, rather than treating "the world model" as a monolith.
 2. **Discrete hard-exploration navigation (MiniGrid / MultiRoom / KeyCorridor).** All tasks so far are DMControl
    (continuous) + continuous 2D mazes. The canonical hard-exploration maps are discrete + partially observed,
    which TD-MPC2 doesn't natively run — a real build, and the right stress test for any "planning explores" claim.

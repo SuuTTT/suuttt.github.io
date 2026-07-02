@@ -76,11 +76,15 @@ this post. On synthetic stochastic-block-model-of-SBMs graphs with a planted \\(
 planted-three-level graphs favored \\(L_3\\) at 15 seeds (\\(L_3{>}L_2\\), \\(p=0.013\\)) and planted-two-level
 graphs *looked* like they favored \\(L_2\\) (\\(p=0.058\\)). I said more seeds were running to firm that up.
 **They did not firm it up:** at 30 seeds the planted-two-level effect is gone (\\(L_2{\approx}L_3{\approx}L_4\\),
-\\(p=0.47\\)) — the \\(p=0.058\\) was noise. The planted-three-level case is being re-tested at 30 seeds now;
-until it lands I treat the planted ground-truth as *unconfirmed*. This does not touch the main result (the
-significance and capacity-control tables above are on real citation/co-purchase graphs, unaffected) — but the
-"depth tracks planted structure" claim is weaker than the first draft implied, and I would rather say so than
-leave the number standing.
+\\(p=0.47\\)) — the \\(p=0.058\\) was noise. But the planted-*three*-level case, which I also re-ran to 30 seeds,
+**held and got stronger**: \\(L_3\\) beats both \\(L_2\\) (\\(+1.7\\)pp, \\(p=0.0014\\)) and \\(L_4\\)
+(\\(+0.8\\)pp, \\(p=0.042\\)) — a significant *interior* peak at the true planted depth. So the honest
+ground-truth result is specific to genuine **deep** hierarchy: where the graph really has a three-level
+structure (and there's headroom to see it), the differentiable objective recovers that depth rather than just
+preferring more levels; a merely two-level planting shows no preference (a deeper tree can represent a
+shallower partition at little cost). Smaller and more regime-dependent than the first draft implied — but,
+firmed up at 30 seeds, real. This never touched the main result: the significance and capacity-control tables
+above are on real citation/co-purchase graphs.
 
 The win also survives a stronger 3-layer residual backbone (multi-level > flat by +3.3pp, \\(p=3\times10^{-4}\\)),
 ruling out a weak-backbone artifact.

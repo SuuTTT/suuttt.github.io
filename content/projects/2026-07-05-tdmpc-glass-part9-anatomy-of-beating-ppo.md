@@ -62,12 +62,12 @@ Per-loss ablation (zero ONE loss term, from scratch, mask verified live in logs;
 **policy prior → 123/2.5**. Ablate **consistency — the self-predictive latent-dynamics loss itself → 367/541, the
 smallest drop of the four.**
 
-**HopperHop — the exploration task (none/value/consistency/reward all n=4; policy n=2, last 2 arms finishing):**
+**HopperHop — the exploration task (all five arms complete at n=4; 20/20 runs):**
 full finds the gait on 4/4 seeds (MPPI best 287–570). **Value-ablated: 0.0 / 0.0 / 3.2 / 0.0 — the gait is
 *never* found. Ablating the TD value loss reproduces the exploration wall.** Consistency-ablated still finds it
 at roughly half strength on 4/4 seeds (MPPI 185–245). Reward-ablated matches CheetahRun's pattern: the planner is
 dead by construction (MPPI ≈0 — it scores rollouts with that head) but **the policy still learns the gait**
-(π 519 / 241 / 226 / 189, n=4). Policy-ablated is ≈0 on *both* readouts (n=2) — and here HopperHop is *harsher*
+(π 519 / 241 / 226 / 189, n=4). Policy-ablated is ≈0 on *both* readouts (n=4) — and here HopperHop is *harsher*
 than CheetahRun (where the planner alone still limped to 123): on the exploration task the planner cannot
 compensate for a missing prior at all. So the precise statement: **the value-learning pathway — the TD value loss
 and the policy trained from it — is individually necessary (each ablation reproduces total failure); the reward
@@ -101,9 +101,8 @@ given better exploration/shaping.
    (the speed-of-learning paper); (c) on-policy PPO has a real, reproducible, task-specific exploration failure
    mode that off-policy and model-based methods don't share — and its mechanism, in TD-MPC2's case, is value
    learning, not dynamics modeling.
-3. **Pending (folds in when a host outage resolves):** the reward/policy arms of the HopperHop ablation
-   (corroborative — CheetahRun's complete version already shows reward = planner-only, policy = both), and seeds
-   3/4 consistency arms.
+3. **Complete.** All 20 HopperHop ablation runs finished (the mid-campaign host outage turned out to be
+   network-only; the jobs never stopped). Nothing in this post is pending.
 
 *Every number: campaign ledger `bet2_null_results.md` (disk paths per entry). Same-env verification, config
 audits, and the two bugs found along the way (Pendulum case mismatch; an A1 noise confound) are documented in the

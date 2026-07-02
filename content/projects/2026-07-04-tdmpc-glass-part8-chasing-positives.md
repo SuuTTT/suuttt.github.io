@@ -78,9 +78,15 @@ confounded (a `PendulumSwingUp`-vs-`PendulumSwingup` case mismatch in upstream m
 the Pendulum-tuned override). BallInCup: discovery-luck on *both* algorithms (PPO 1/3 seeds solve at ~967;
 TD-MPC2 itself 1/2 at ~975) — not a wall. So the wall is **specific to the gait-discovery regime** (HopperHop),
 which sharpens the claim: on-policy PPO fails at gait discovery specifically, not at hard control generally.
-*(Still running: the per-head WM ablation on HopperHop + CheetahRun — which of the ~5 nets carries the efficiency
-advantage; early CheetahRun read: ablating the TD/value loss is catastrophic, the reward head matters only for
-planning, consistency is substantial.)*
+**Which net carries it? The per-head ablation (CheetahRun done, n=2; HopperHop running, n=4 queued).** Zeroing one
+loss term at a time (mask verified live): full = MPPI 738 / pi 782. Ablating **value** → 16 / 12 (catastrophic,
+kills planner *and* policy); **reward** → MPPI 5 but pi **761** (planning-only, partly by construction — MPPI
+scores rollouts with it); **policy prior** → 123 / 2.5; and — the surprise — **consistency, the self-predictive
+"world model" loss itself** → 367 / 541, the *smallest* drop of the four. On the clean (pi) readout the ranking is
+value ≫ policy > consistency > reward. So the mechanism behind the efficiency advantage looks like **TD value
+learning through the latent, not the self-predictive dynamics loss per se** — a finding that rhymes with the whole
+campaign (the value anchor keeps winning). The HopperHop version — the one that matters for the exploration story —
+folds in when it lands.
 
 ## The localized positive: hierarchy helps where it should
 

@@ -68,7 +68,8 @@ seeds cross 200 within 5M steps**, the threshold PPO's five seeds never touched 
 > PPO stays categorically walled. *(Level update, 2026-07-02: an earlier version claimed "~2× attained level at
 > matched budget." The 20M SAC runs killed the robustness of that: seeds span **277 / 414 finals at 20M, with a
 > third seed at 564 by 12.8M — above TD-MPC2's anchor**. There is no reliable level gap at larger budgets;
-> the world model's robust advantage is efficiency, full stop.)*
+> the world model's robust advantage is efficiency, full stop. Final s13: **572.5 at 20M — the best SAC seed
+*exceeds* TD-MPC2's 5M level**; 20M finals so far 277 / 414 / 572, n=5 completing.)*
 
 This lands the campaign back on its own law from an unexpected direction: the "exploration" advantage decomposes
 into an on-policy failure (PPO's) plus a model-based *efficiency* advantage (TD-MPC2's) — the world model is a

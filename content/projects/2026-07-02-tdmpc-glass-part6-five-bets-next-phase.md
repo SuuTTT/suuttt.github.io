@@ -11,6 +11,17 @@ tags: ["world-models", "TD-MPC2", "PPO", "exploration", "planning", "JEPA", "str
 
 {{< katex >}}
 
+> **⚠ Correction (2026-07-02).** This post asserts as its central correction-of-record that "**planning is a
+> directed-exploration operator**." That thesis was subsequently **refuted three ways** by the controlled,
+> noise-matched plan-vs-π ablations ([Part 7](../2026-07-03-tdmpc-glass-part7-five-bets-resolved): no coverage
+> gain, discovery *earlier* without planning), and the exploration advantage was relocated first to the world
+> model and finally — after the SAC control — to an **on-policy pathology of PPO** with the world model as a
+> *sample-efficiency* lever ([Part 8](../2026-07-04-tdmpc-glass-part8-chasing-positives)). The five bets below
+> mostly resolved null (Part 7/8 scorecards). Also: the "R²≈0.999 value-probe" cited below was retracted as an
+> instrument by the [R²-criterion postmortem](../2026-06-17-tdmpc-glass-r2-criterion-postmortem) — the
+> redundancy conclusion rests on the direct nulls, not that probe. Kept unedited as the planning document of
+> record.
+
 > A planning document. The [Part 5 method map](../2026-07-01-tdmpc-glass-part5-beat-ppo-reality-check) mapped
 > where four families (state/behavioral/planning/PPO) win across Panda + DMControl. A supervisor review then
 > reframed *why*, and pointed at what to do next. This post is the honest reframe + five proposals we're now

@@ -62,12 +62,17 @@ Per-loss ablation (zero ONE loss term, from scratch, mask verified live in logs;
 **policy prior → 123/2.5**. Ablate **consistency — the self-predictive latent-dynamics loss itself → 367/541, the
 smallest drop of the four.**
 
-**HopperHop — the exploration task (none, value & consistency all n=4; reward n=2; policy arms finishing):** full
-finds the gait on 4/4 seeds (MPPI best 287–570). **Value-ablated: 0.0 / 0.0 / 3.2 / 0.0 — the gait is *never*
-found. Ablating the TD value loss reproduces the exploration wall.** Consistency-ablated still finds it at
-roughly half strength on 4/4 seeds (MPPI 185–245). Reward-ablated matches CheetahRun's pattern exactly: the
-planner is dead by construction (MPPI ≈0, it scores rollouts with that head) but **the policy still learns the
-gait** (π 519 / 241, n=2).
+**HopperHop — the exploration task (none/value/consistency/reward all n=4; policy n=2, last 2 arms finishing):**
+full finds the gait on 4/4 seeds (MPPI best 287–570). **Value-ablated: 0.0 / 0.0 / 3.2 / 0.0 — the gait is
+*never* found. Ablating the TD value loss reproduces the exploration wall.** Consistency-ablated still finds it
+at roughly half strength on 4/4 seeds (MPPI 185–245). Reward-ablated matches CheetahRun's pattern: the planner is
+dead by construction (MPPI ≈0 — it scores rollouts with that head) but **the policy still learns the gait**
+(π 519 / 241 / 226 / 189, n=4). Policy-ablated is ≈0 on *both* readouts (n=2) — and here HopperHop is *harsher*
+than CheetahRun (where the planner alone still limped to 123): on the exploration task the planner cannot
+compensate for a missing prior at all. So the precise statement: **the value-learning pathway — the TD value loss
+and the policy trained from it — is individually necessary (each ablation reproduces total failure); the reward
+head matters only for planning; and the self-predictive consistency loss is the only component whose removal
+merely degrades.**
 
 > **"The world model explores" decomposes into: the TD value signal trained through the latent is what discovers
 > and ranks behavior; the self-predictive dynamics loss is a helpful regularizer, not the key.** This rhymes with

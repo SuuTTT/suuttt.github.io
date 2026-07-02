@@ -11,6 +11,9 @@ tags: ["world-models", "TD-MPC2", "PPO", "exploration", "planning", "hierarchy",
 
 {{< katex >}}
 
+> **→ This post evolved live as controls landed; [Part 9](../2026-07-05-tdmpc-glass-part9-anatomy-of-beating-ppo)
+> is the consolidated final state of every claim below.**
+
 > A positive-chase. After [Part 7](../2026-07-03-tdmpc-glass-part7-five-bets-resolved) closed the five bets
 > mostly null, we re-ran each with a stronger method and added the question that turned out to matter most:
 > *is TD-MPC2's win on exploration-hard tasks sample-efficiency, or real exploration?* Everything below is

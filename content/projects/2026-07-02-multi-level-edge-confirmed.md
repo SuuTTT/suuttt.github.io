@@ -71,12 +71,16 @@ More levels are not always better. Over five datasets and ten seeds, three level
 deeper soft trees over-abstract. Because the objective is validated at \\(L=4\\), this "deeper hurts" is a
 real optimization effect, not a bug.
 
-Does the optimal depth track *true* structure? On synthetic stochastic-block-model-of-SBMs graphs with a
-planted \\(L^\star\\)-level hierarchy, tested in the difficulty regime where each depth has classification
-headroom, the gain peaks at \\(L=L^\star\\): planted-three-level graphs favor \\(L_3\\) (\\(L_3{>}L_2\\),
-\\(p=0.013\\)); planted-two-level graphs favor \\(L_2\\) (\\(p=0.058\\), suggestive; more seeds running to
-firm it up). Honest caveat: the effect is small (~1pp) and needs headroom to be visible — but its *direction*
-is the ground-truth signature you want.
+Does the optimal depth track *true* structure? Here I have to walk back a number from the first version of
+this post. On synthetic stochastic-block-model-of-SBMs graphs with a planted \\(L^\star\\)-level hierarchy,
+planted-three-level graphs favored \\(L_3\\) at 15 seeds (\\(L_3{>}L_2\\), \\(p=0.013\\)) and planted-two-level
+graphs *looked* like they favored \\(L_2\\) (\\(p=0.058\\)). I said more seeds were running to firm that up.
+**They did not firm it up:** at 30 seeds the planted-two-level effect is gone (\\(L_2{\approx}L_3{\approx}L_4\\),
+\\(p=0.47\\)) — the \\(p=0.058\\) was noise. The planted-three-level case is being re-tested at 30 seeds now;
+until it lands I treat the planted ground-truth as *unconfirmed*. This does not touch the main result (the
+significance and capacity-control tables above are on real citation/co-purchase graphs, unaffected) — but the
+"depth tracks planted structure" claim is weaker than the first draft implied, and I would rather say so than
+leave the number standing.
 
 The win also survives a stronger 3-layer residual backbone (multi-level > flat by +3.3pp, \\(p=3\times10^{-4}\\)),
 ruling out a weak-backbone artifact.

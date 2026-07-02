@@ -47,8 +47,27 @@ targets a planner pursues**. We already own SE, a working planner, and a control
 | A1-core (planning vs π-only, **from scratch**, w/ coverage) | ✅ done | **NULL (mildly reversed)** — no coverage gain at 80k |
 | A1-full (learnable task, coverage across curve) | ✅ done | **coverage NULL/reversed, but sample-efficiency GO** (WalkerRun) |
 | A1-decisive (exploration-hard **and** learnable) | ✅ done | **NULL** — policy-only discovers sparse reward equally (earlier) |
-| A2 (novelty-seeking MPPI) | ⏸ deprioritized | flagship thesis refuted |
-| A3 (SE-subgoal discovery) | ⏸ deprioritized | — |
+| A2 (novelty-seeking MPPI) | 🟡 **running** | re-opened — prune *toward* novelty (see reframe below) |
+| A3 (SE-subgoal discovery) | 🟡 running (as Thread E) | SE-community subgoals |
+
+**Reframe (the useful one): planning is a *pruning* operator, not an exploration one.** The "narrowing" we
+measured isn't a failure — it's the mechanism. Vanilla MPPI prunes the search toward predicted value
+(branch-and-bound-like), concentrating samples on high-value *reachable* trajectories. That pruning **is** the
+sample-efficiency win (A1-full: narrower coverage, ~1.5–2× faster). But pruning toward predicted reward also
+prunes *away* from undiscovered **sparse** reward — which is exactly why planning didn't help discovery on
+CartpoleSwingupSparse (A1-decisive). So: *planning prunes exploration — an asset for exploitation/speed, a
+liability for sparse discovery.* This directly motivates **A2 (running)**: add an intrinsic-novelty term so the
+pruning points **toward** novelty (Plan2Explore-in-TD-MPC2), and see if it flips the sparse-discovery result.
+
+**Two things we have *not* tested yet (and should):**
+1. **TD-MPC2 coverage vs PPO coverage, head-to-head.** Every controlled test above is PLAN vs π-ONLY *within*
+   TD-MPC2. The famous HopperHop **367 vs 33** is TD-MPC2-vs-PPO, but we isolated only that *planning* isn't the
+   cause (plan-vs-π edge +1.7) — we never ran TD-MPC2 vs PPO on coverage/discovery directly. So "TD-MPC2 explores
+   better than PPO" is genuinely untested; the likely real reason it wins HopperHop is **sample-efficiency**, not
+   exploration.
+2. **Discrete hard-exploration navigation (MiniGrid / MultiRoom / KeyCorridor).** All tasks so far are DMControl
+   (continuous) + continuous 2D mazes. The canonical hard-exploration maps are discrete + partially observed,
+   which TD-MPC2 doesn't natively run — a real build, and the right stress test for any "planning explores" claim.
 
 **Verdict on the flagship: the "planning-as-exploration" thesis is refuted; the honest result is
 sample-efficiency + exploitation.** Three controlled plan-vs-π-only tests now agree that planning is **not** a

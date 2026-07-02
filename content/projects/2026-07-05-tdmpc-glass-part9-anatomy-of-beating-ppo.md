@@ -37,8 +37,13 @@ On the identical MJX `HopperHop` (verified byte-for-byte — same registry env, 
 
 And the wall does not generalize: FingerTurnHard PPO ≈973 (3/3, no wall); Pendulum solves once an upstream
 config-case bug (`PendulumSwingUp` vs `PendulumSwingup` silently skipping the tuned override) is fixed — peaks
-842/831 (n=2); BallInCup is discovery-luck for *both* algorithms (PPO 1/3, TD-MPC2 1/2). **On-policy PPO fails at
-gait discovery specifically, not at hard control generally.**
+842/831 (n=2); BallInCup is discovery-luck for *both* algorithms (PPO 1/3, TD-MPC2 1/2). *(Addendum, later that
+day — a fourth control: **CheetahRun**, which our own older Pareto study had scored "PPO never reaches 500 at
+30M." With the tuned config and adequate budget, PPO reaches **892–922 (3/3 seeds at 285M)**, matching SAC
+(918/912 at 10M) — the old number was a budget/config artifact, corrected in the synthesis doc. CheetahRun is
+slow-but-converging, not walled; TD-MPC2's edge there is purely efficiency, ~600+ within 0.55M steps.)* With four
+no-wall controls (Finger, Pendulum, BallInCup, CheetahRun): **on-policy PPO fails at gait discovery specifically,
+not at hard control generally.**
 
 ## 2. Level vs efficiency: the 4× budget test
 

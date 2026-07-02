@@ -11,6 +11,13 @@ tags: ["tdmpc2", "glass-jax", "structural-entropy", "jax", "reinforcement-learni
 
 {{< katex >}}
 
+> **⚠ Retrospective correction (2026-07-02).** The headline results in this post did not survive later, fairer
+> protocols: [Part 2](../2026-06-09-tdmpc-glass-part2-mechanism-check-saved-a-campaign)'s controlled re-run showed
+> the Phase-1/1b "wins" were **procedure artifacts** (restart/seed lottery — neither Glass nor vanilla actually
+> entered the high-reward basin in the clean protocol); the K=4-cluster-basin causal story was **falsified** in
+> Iterations 2–7; and the final 16-task matched study found glass's seed variance is *higher* out-of-sample,
+> reversing the low-variance claim (glass ≈ TD-MPC2 is a wash). Kept unedited below for the record.
+
 > A practical write-up of (a) what TD-MPC2 is, (b) our JAX/Flax reimplementation
 > that runs **~50× faster** than the official PyTorch one, (c) what Glass-JAX
 > adds and **exactly which network's parameters it touches**, (d) the iteration

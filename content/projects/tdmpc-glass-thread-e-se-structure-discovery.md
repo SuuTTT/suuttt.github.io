@@ -43,7 +43,7 @@ untested uses are structural, not representational:
 | item | state | verdict |
 |---|---|---|
 | SE-as-latent-regularizer (retrospective) | ✅ closed | redundant / wrong bias (see [Thread D](../tdmpc-glass-thread-d-jepa-anticollapse-done-right)) |
-| SE-for-subgoal-discovery (A3) | ⏳ queued | merges into [Thread A](../tdmpc-glass-thread-a-planning-exploration) |
+| SE-for-subgoal-discovery (A3) | ❌ **NULL** (2026-07-02, n=2, 3 sparse tasks) | SE-community subgoal shaping ties or hurts flat (Acrobot 460→382; CartpoleSwingupSparse 316→7 — hurts most exactly where it was meant to help; FingerTurnHard ~tie). See Part 8. |
 
 ## Progress log
 

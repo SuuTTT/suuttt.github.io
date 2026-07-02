@@ -11,6 +11,13 @@ tags: ["tdmpc2", "glass-jax", "structural-entropy", "world-models", "jumpy-model
 
 {{< katex >}}
 
+> **⚠ Correction (2026-07-02).** The one "real (borrowed) win" below — jumpy world model, +44%/+80% on
+> PandaPickCube — is a **shaped-return** result that did not carry to task success: later real-success evaluation
+> ([Part 4](../2026-06-24-tdmpc-glass-part4-jumpy-to-beat-ppo)) measured **0.00 success for both jumpy and vanilla**
+> on that task, and the Part-5 Pareto study scored jumpy null-to-mildly-negative vs vanilla on return,
+> sample-efficiency, and wall-clock. The mechanism-check methodology this post introduces stands; that headline win
+> does not.
+
 > Part 1 ended on a high: a structural-entropy ("Glass") augmentation of TD-MPC2 that climbed
 > above the official 4M-step HopperHop mean. This post is the honest sequel. We asked one question —
 > **does abstraction actually improve a strong latent world model when you remove every procedure

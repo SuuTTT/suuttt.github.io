@@ -43,12 +43,12 @@ targets a planner pursues**. We already own SE, a working planner, and a control
 
 | arm | state | verdict |
 |---|---|---|
-| A1 mechanism (same-weights ablation, **trained** ckpt) | ✅ done | **GO (n=1 task)** — planning covers 2.2× more cells |
+| A1 mechanism (same-weights ablation, **trained** ckpt) | ✅ done | **GO (n=1 task), ⚠ noise-confounded** — planning covers 2.2× more cells, BUT the π arm rolled out the *deterministic* policy mean while MPPI samples with std up to 2.0, so part of the gap is action stochasticity, not planning (review 2026-07-02; the training-time ablations below ARE noise-matched) |
 | A1-core (planning vs π-only, **from scratch**, w/ coverage) | ✅ done | **NULL (mildly reversed)** — no coverage gain at 80k |
 | A1-full (learnable task, coverage across curve) | ✅ done | **coverage NULL/reversed, but sample-efficiency GO** (WalkerRun) |
 | A1-decisive (exploration-hard **and** learnable) | ✅ done | **NULL** — policy-only discovers sparse reward equally (earlier) |
-| A2 (novelty-seeking MPPI) | 🟡 **running** | re-opened — prune *toward* novelty (see reframe below) |
-| A3 (SE-subgoal discovery) | 🟡 running (as Thread E) | SE-community subgoals |
+| A2 (novelty-seeking MPPI) | ❌ **NULL / mostly harmful** (2026-07-02, n=2, 5 tasks) | novelty in the MPPI objective hurts dense tasks (Pendulum 766→135); the lone sparse "win" is within seed variance — see Part 8 |
+| A3 (SE-subgoal discovery) | ❌ **NULL** (2026-07-02, n=2, 3 tasks, ran as Thread E) | SE-community subgoal shaping ties or hurts flat; worst on the sparse task it was meant to help |
 
 **Reframe (the useful one): planning is a *pruning* operator, not an exploration one.** The "narrowing" we
 measured isn't a failure — it's the mechanism. Vanilla MPPI prunes the search toward predicted value

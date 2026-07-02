@@ -11,6 +11,13 @@ tags: ["tdmpc2", "glass-jax", "world-models", "jumpy-models", "structural-entrop
 
 {{< katex >}}
 
+> **⚠ Correction (2026-07-02).** Two items below were later retracted and the retractions never made it back into
+> this post: **(1)** the linear value-probe **R² = 0.9994** evidence for the redundancy criterion was invalidated
+> the same week by the [R²-criterion postmortem](../2026-06-17-tdmpc-glass-r2-criterion-postmortem) (the probe is
+> saturated by construction and never supported the claim) — §8's update note re-affirming it is wrong; the
+> redundancy *conclusion* survives on the 16 direct nulls, not on that probe. **(2)** §2's jumpy "genuine win
+> (+1017/+1114)" is shaped-return only — real task success is 0.00 for both arms (Part 4).
+
 > A standing-meeting-ready field report. Parts 1–2 put our abstraction ideas through a fair protocol
 > and most dissolved to null. This post consolidates everything since: a *criterion* for why abstraction
 > is redundant, a clean reproduction of the one real win (which isn't ours), a comprehensive null sweep,

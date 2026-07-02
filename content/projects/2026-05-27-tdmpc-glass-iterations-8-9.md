@@ -11,6 +11,11 @@ tags: ["tdmpc2", "glass-jax", "structural-entropy", "jax", "reinforcement-learni
 
 {{< katex >}}
 
+> **⚠ Retrospective correction (2026-07-02).** The "credible lead" this post ends on did not survive.
+> [Part 2](../2026-06-09-tdmpc-glass-part2-mechanism-check-saved-a-campaign)'s fair, single-variable, adequately
+> powered protocol closed it: the HopperHop edge was restart/basin lottery, and the final 16-task matched benchmark
+> scored glass ≈ TD-MPC2 (no systematic difference; glass costs ~1.35× wall-clock). Kept unedited for the record.
+
 > This is the third post in the TD-MPC-Glass series. The first post introduced
 > the JAX TD-MPC2 implementation and the Phase 1b Glass integration. The second
 > post covered Iterations 2-7 and ended with the K_UPDATE hypothesis. This post

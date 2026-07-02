@@ -33,25 +33,43 @@ Part 7 showed planning (MPPI) is *not* a directed-exploration operator — a pol
 explored/discovered just as well. That left the real question open: **why does TD-MPC2 crush PPO on `HopperHop`
 (367 vs 33)?** Sample-efficiency, or exploration?
 
-We settled it by running **PPO at a huge budget**: brax PPO, 5 seeds, up to **472M env-steps ≈ 94× the ~5M
-TD-MPC2 needs to reach 367**.
+We settled it by running **PPO at a huge budget**: brax PPO (mujoco_playground's tuned DMC config, and — verified —
+byte-for-byte the *same* MJX `HopperHop` env, episode length, and action repeat as our TD-MPC2 runs), 5 seeds,
+**472M env-steps per seed**. *(Correction 2026-07-02: an earlier version said "94× the ~5M TD-MPC2 needs to reach
+367." The disk says better: TD-MPC2's 366.8 came at ~**1M** steps (best of 4 seeds; n=4 mean ≈282, range 180–378),
+and a fresh same-env 2-seed run sits at ~480–520 by 3.9M. So the PPO budget is ≈**470×**, not 94× — the wall is
+stronger than first stated, but the old numbers didn't trace.)*
 
 | | peak (mean / best) | seeds crossing 200 / 367 |
 |---|---|---|
 | **PPO @ 472M** | **40.0 / 53.8** | **0 / 5** |
-| TD-MPC2 @ ~5M | ~367 | — |
+| TD-MPC2 @ ~1M (same env) | ~367 best seed (n=4 mean ≈282; ~480–520 by 3.9M, n=2) | — |
 
-PPO at 94× the samples **never gets past ~54** — a genuine **exploration wall**, not slow learning. Combined with
-the planning-vs-policy null, this pins the mechanism:
+PPO **never gets past ~54 through 472M steps**. Honest phrasing: the curves are still *creeping* (half-vs-half
+means roughly double, peaks arrive late), so "walled through 472M," not "plateaued" — but extrapolating that creep
+to TD-MPC2's level would take tens of billions of steps. A genuine exploration wall, not slow learning. Combined
+with the planning-vs-policy null, this pins the mechanism:
 
 > **Planning (MPPI) is a *pruning / exploitation* operator; the *world model* (learned latent dynamics + value
 > from imagined rollouts) is the *exploration* lever.** It lets TD-MPC2 discover a gait that model-free PPO cannot
 > find at any practical budget.
 
 This reframes the whole flagship honestly: the exploration advantage is real, but it lives in the **model**, not
-the **planner**. *(Two confirmations running: a **generalization** sweep — does the wall hold on Pendulum /
-Finger / BallInCup, where TD-MPC2 also succeeds? early signal: PPO ~15–55 vs TD-MPC2 ~911, leaning yes — and a
-**per-head ablation** to say which of the ~5 world-model nets carries it. Results fold in when done.)*
+the **planner**.
+
+**Scope caveat (added 2026-07-02, review):** the model-free arm here is *on-policy PPO*. No off-policy,
+entropy-driven baseline (SAC/TD3) has been run, so the sharpest defensible claim today is "the world model explores
+where **on-policy PPO** is walled," not "where model-free RL is walled." A SAC-on-HopperHop control is the single
+test that could most cheaply overturn (or firm) the strong version.
+
+*(Two confirmations running: a **generalization** sweep — does the wall hold on Pendulum / Finger / BallInCup? —
+and a **per-head ablation** to say which of the ~5 world-model nets carries it. Interim from disk, 2026-07-02: the
+wall does **not** simply generalize — on FingerTurnHard PPO reaches ~975 ≈ TD-MPC2's level, i.e. no wall; on
+Pendulum 2/3 PPO seeds wall hard but the best seed catches up (852 vs anchor 911), *and* we found an upstream
+config bug (a `PendulumSwingUp`-vs-`PendulumSwingup` case mismatch silently skips the official Pendulum-tuned
+override), so the Pendulum cell is not clean. Early read: the exploration wall is **task-specific to gait-discovery
+regimes like HopperHop**, which sharpens rather than weakens the claim. Full verdict + per-head ablation fold in
+when the runs finish.)*
 
 ## The localized positive: hierarchy helps where it should
 
@@ -65,6 +83,14 @@ vs a matched-budget flat baseline, on sparse navigation. The honest, verificatio
 
 So the positive is **localized and mechanistic**: learned hierarchy earns its keep on **bottleneck / multi-room**
 structure, not on open long-horizon rooms. That's a more defensible claim than "hierarchy beats flat."
+
+**Two scope caveats (added 2026-07-02, review):** (1) the feudal LL trains on dense *self-generated*
+subgoal-distance shaping (no privileged task information — the true goal never enters a training reward, and eval
+is unshaped for both arms) while flat TD3 trains on the sparse reward alone; a **shaped-flat control** (flat +
+intrinsic dense signal) hasn't been run, so the clean claim is "a learned 2-level hierarchy *with self-generated
+dense shaping* beats sparse flat TD3 at matched env-steps," not "hierarchy per se." The feudal arm also takes 2
+gradient updates per env step (LL+HL) vs flat's 1 — matched per-network, not in total compute. (2) 4/6 vs 0/6 is
+Fisher-exact p ≈ 0.03 one-sided — real but thin; one flipped seed would un-signify it.
 
 ## The nulls (honest, and consistent)
 

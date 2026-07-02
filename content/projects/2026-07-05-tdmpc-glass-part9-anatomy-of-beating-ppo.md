@@ -62,10 +62,12 @@ Per-loss ablation (zero ONE loss term, from scratch, mask verified live in logs;
 **policy prior → 123/2.5**. Ablate **consistency — the self-predictive latent-dynamics loss itself → 367/541, the
 smallest drop of the four.**
 
-**HopperHop — the exploration task (interim; none & value n=4, consistency n=2; reward/policy arms pending on a
-box outage):** full finds the gait on 4/4 seeds (MPPI best 287–570). **Value-ablated: 0.0 / 0.0 / 3.2 / 0.0 — the
-gait is *never* found. Ablating the TD value loss reproduces the exploration wall.** Consistency-ablated still
-finds it at roughly half strength (194–201).
+**HopperHop — the exploration task (none, value & consistency all n=4; reward n=2; policy arms finishing):** full
+finds the gait on 4/4 seeds (MPPI best 287–570). **Value-ablated: 0.0 / 0.0 / 3.2 / 0.0 — the gait is *never*
+found. Ablating the TD value loss reproduces the exploration wall.** Consistency-ablated still finds it at
+roughly half strength on 4/4 seeds (MPPI 185–245). Reward-ablated matches CheetahRun's pattern exactly: the
+planner is dead by construction (MPPI ≈0, it scores rollouts with that head) but **the policy still learns the
+gait** (π 519 / 241, n=2).
 
 > **"The world model explores" decomposes into: the TD value signal trained through the latent is what discovers
 > and ranks behavior; the self-predictive dynamics loss is a helpful regularizer, not the key.** This rhymes with

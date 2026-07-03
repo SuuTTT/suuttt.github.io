@@ -77,9 +77,9 @@ Per-loss ablation (zero ONE loss term, from scratch, mask verified live in logs;
 **policy prior → 123/2.5**. Ablate **consistency — the self-predictive latent-dynamics loss itself → 367/541, the
 smallest drop of the four.**
 
-**HopperHop — the exploration task (all five arms complete at n=4; 20/20 runs):**
-full finds the gait on 4/4 seeds (MPPI best 287–570). **Value-ablated: 0.0 / 0.0 / 3.2 / 0.0 — the gait is
-*never* found. Ablating the TD value loss reproduces the exploration wall.** Consistency-ablated still finds it
+**HopperHop — the exploration task (all five arms at n=4; the headline value cell firmed to n=6 on 07-03):**
+full finds the gait on 6/6 seeds (MPPI best 287–570). **Value-ablated: 0.0 / 0.0 / 3.2 / 0.0 / 0.0 / 0.1 (n=6) —
+the gait is *never* found. Ablating the TD value loss reproduces the exploration wall, six seeds out of six.** Consistency-ablated still finds it
 at roughly half strength on 4/4 seeds (MPPI 185–245). Reward-ablated matches CheetahRun's pattern: the planner is
 dead by construction (MPPI ≈0 — it scores rollouts with that head) but **the policy still learns the gait**
 (π 519 / 241 / 226 / 189, n=4). Policy-ablated is ≈0 on *both* readouts (n=4) — and here HopperHop is *harsher*

@@ -21,7 +21,7 @@ tags: ["world-models", "TD-MPC2", "PPO", "SAC", "exploration", "hierarchy", "mec
 
 | claim as originally hoped | what the control said | final form |
 |---|---|---|
-| "TD-MPC2 beats PPO by exploring better" | plan-vs-π: planning isn't the explorer; SAC: model-free escapes too | **PPO's exploration wall is real, on-policy-specific, and gait-specific** |
+| "TD-MPC2 beats PPO by exploring better" | plan-vs-π: planning isn't the explorer; SAC: model-free escapes too | **PPO's exploration wall is real, on-policy-specific, and hopper-morphology-specific** (07-03: Stand walls too; SAC solves both) |
 | "the world model is the exploration lever" | per-loss ablation | **the TD *value* signal is the lever; the self-predictive loss is the least critical piece** |
 | "world model buys 2× higher level" | SAC at 4× budget (n=5) | **no clean level gap — consistency + ~4–5× sample-efficiency** |
 | "learned hierarchy beats flat" | shaped-flat control (n=6) | **dense shaping in disguise; the hierarchy's real trick is *self-generating* that signal** |
@@ -41,9 +41,17 @@ config-case bug (`PendulumSwingUp` vs `PendulumSwingup` silently skipping the tu
 day — a fourth control: **CheetahRun**, which our own older Pareto study had scored "PPO never reaches 500 at
 30M." With the tuned config and adequate budget, PPO reaches **892–922 (3/3 seeds at 285M)**, matching SAC
 (918/912 at 10M) — the old number was a budget/config artifact, corrected in the synthesis doc. CheetahRun is
-slow-but-converging, not walled; TD-MPC2's edge there is purely efficiency, ~600+ within 0.55M steps.)* With four
-no-wall controls (Finger, Pendulum, BallInCup, CheetahRun): **on-policy PPO fails at gait discovery specifically,
-not at hard control generally.**
+slow-but-converging, not walled; TD-MPC2's edge there is purely efficiency, ~600+ within 0.55M steps.)*
+
+**🚩 Framing revision (2026-07-03, the wall-boundary probe):** we then asked whether the wall is the *hop gait*
+or the *hopper robot*, by running the same three arms on **HopperStand** (same morphology, easier objective).
+Answer: **PPO is walled there too** — peaks 149 / 142 through 285M steps (n=2, tuned config verified applied,
+curves flat at the end) while **SAC solves it at 5M (492 / 754)**. So the honest final framing, with five no-wall
+controls (Finger, Pendulum, BallInCup, CheetahRun, WalkerRun) and two walled hopper tasks: **the on-policy
+exploration wall is morphology-specific — the single-leg hopper's unstable, contact-timing-critical dynamics
+defeat on-policy sampling even for standing, while off-policy replay handles them easily.** That is a stronger
+and more useful claim than "gait discovery": it names a characterizable dynamics class where on-policy PPO
+categorically fails.
 
 ## 2. Level vs efficiency: the 4× budget test
 

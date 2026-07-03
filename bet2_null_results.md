@@ -1,0 +1,1 @@
+  ↳ 21:25 SAC HumanoidWalk s45 DONE 894.0 → FINAL SAC humanoid rate: 4/5 solve (909.5/900.7/625.3/894.0), 1/5 nan (s44) — vs PPO 0/3 attempts (all nan). Off-policy robustly solves the 2nd morphology; on-policy can't run.

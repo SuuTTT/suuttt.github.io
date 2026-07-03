@@ -52,7 +52,7 @@ picture, with five no-wall control tasks:
 
 - **HopperHop: a categorical on-policy wall** — PPO 0/5 seeds ≥200 at 472M; SAC 3/3 ≥200 by 5M; TD-MPC2 6/6 by 1M.
 - **HopperStand: a graded stochastic barrier** — PPO escapes 1/4 (and only at ~60× SAC's budget); SAC solves 3/4
-  at 5M; TD-MPC2 solves at 0.65M (962, n=1→2 pending).
+  at 5M; TD-MPC2 solves 2/2 within 1M (962 / 948).
 
 So the durable, defensible claim is a **reliability × efficiency ordering on hopper dynamics — TD-MPC2 ≫ SAC ≫
 PPO, with orders-of-magnitude budget gaps** — hardest exactly where the dynamics are unstable and

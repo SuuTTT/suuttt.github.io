@@ -51,7 +51,9 @@ controls (Finger, Pendulum, BallInCup, CheetahRun, WalkerRun) and two walled hop
 exploration wall is morphology-specific — the single-leg hopper's unstable, contact-timing-critical dynamics
 defeat on-policy sampling even for standing, while off-policy replay handles them easily.** That is a stronger
 and more useful claim than "gait discovery": it names a characterizable dynamics class where on-policy PPO
-categorically fails.
+categorically fails. The completed Stand column (TD-MPC2 **962 by 0.65M**, n=1 ≫ SAC 492/754 @5M ≫ PPO ≤149
+@285M) also shows the hopper regime is where the value-pathway learner's edge is largest — ~8× more efficient
+than SAC *and* higher-reaching, exactly where on-policy exploration collapses entirely.
 
 ## 2. Level vs efficiency: the 4× budget test
 

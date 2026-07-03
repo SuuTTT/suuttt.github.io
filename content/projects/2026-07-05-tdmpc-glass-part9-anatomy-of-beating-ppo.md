@@ -79,6 +79,11 @@ and the policy trained from it — is individually necessary (each ablation repr
 head matters only for planning; and the self-predictive consistency loss is the only component whose removal
 merely degrades.**
 
+**Replicated on a third task (WalkerRun, n=2/arm, 1M, added 2026-07-03):** full 731/680 (MPPI) & 711/671 (π);
+**value-ablated 56/28 & 44/37 — dead; policy-ablated 76/64 & 48/35 — dead; reward-ablated MPPI dead but π at
+full strength 711/728; consistency-ablated 547/522 & 674/570 — the mildest cut (~25%) yet again.** The mechanism
+table now spans three tasks (CheetahRun n=2, HopperHop n=4, WalkerRun n=2) with the same shape everywhere.
+
 > **"The world model explores" decomposes into: the TD value signal trained through the latent is what discovers
 > and ranks behavior; the self-predictive dynamics loss is a helpful regularizer, not the key.** This rhymes with
 > the entire campaign — from the redundancy nulls to the anti-collapse reversal, the value anchor keeps being the

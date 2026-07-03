@@ -21,7 +21,7 @@ tags: ["world-models", "TD-MPC2", "PPO", "SAC", "exploration", "hierarchy", "mec
 
 | claim as originally hoped | what the control said | final form |
 |---|---|---|
-| "TD-MPC2 beats PPO by exploring better" | plan-vs-π: planning isn't the explorer; SAC: model-free escapes too | **PPO's exploration wall is real, on-policy-specific, and hopper-morphology-specific** (07-03: Stand walls too; SAC solves both) |
+| "TD-MPC2 beats PPO by exploring better" | plan-vs-π: planning isn't the explorer; SAC: model-free escapes too | **categorical wall on the hop only; graded barrier on Stand — reliability×efficiency ordering TD-MPC2 ≫ SAC ≫ PPO on hopper dynamics** (revised twice on 07-03 as n grew) |
 | "the world model is the exploration lever" | per-loss ablation | **the TD *value* signal is the lever; the self-predictive loss is the least critical piece** |
 | "world model buys 2× higher level" | SAC at 4× budget (n=5) | **no clean level gap — consistency + ~4–5× sample-efficiency** |
 | "learned hierarchy beats flat" | shaped-flat control (n=6) | **dense shaping in disguise; the hierarchy's real trick is *self-generating* that signal** |
@@ -43,17 +43,21 @@ day — a fourth control: **CheetahRun**, which our own older Pareto study had s
 (918/912 at 10M) — the old number was a budget/config artifact, corrected in the synthesis doc. CheetahRun is
 slow-but-converging, not walled; TD-MPC2's edge there is purely efficiency, ~600+ within 0.55M steps.)*
 
-**🚩 Framing revision (2026-07-03, the wall-boundary probe):** we then asked whether the wall is the *hop gait*
-or the *hopper robot*, by running the same three arms on **HopperStand** (same morphology, easier objective).
-Answer: **PPO is walled there too** — peaks 149 / 142 through 285M steps (n=2, tuned config verified applied,
-curves flat at the end) while **SAC solves it at 5M (492 / 754)**. So the honest final framing, with five no-wall
-controls (Finger, Pendulum, BallInCup, CheetahRun, WalkerRun) and two walled hopper tasks: **the on-policy
-exploration wall is morphology-specific — the single-leg hopper's unstable, contact-timing-critical dynamics
-defeat on-policy sampling even for standing, while off-policy replay handles them easily.** That is a stronger
-and more useful claim than "gait discovery": it names a characterizable dynamics class where on-policy PPO
-categorically fails. The completed Stand column (TD-MPC2 **962 by 0.65M**, n=1 ≫ SAC 492/754 @5M ≫ PPO ≤149
-@285M) also shows the hopper regime is where the value-pathway learner's edge is largest — ~8× more efficient
-than SAC *and* higher-reaching, exactly where on-policy exploration collapses entirely.
+**🚩 Framing revisions (2026-07-03, the wall-boundary probe — twice, because the controls kept teaching):** we
+asked whether the wall is the *hop gait* or the *hopper robot*, running the same three arms on **HopperStand**
+(same morphology, easier objective). At n=2 PPO looked walled there too (149/142 @285M) and we briefly framed the
+wall as morphology-categorical. **Extending to n=4 corrected that:** PPO Stand = 149 / 142 / 144 / **681 — one
+seed in four escapes**; and SAC Stand = 492 / 754 / 464 / **33 — one seed in four fails**. The honest final
+picture, with five no-wall control tasks:
+
+- **HopperHop: a categorical on-policy wall** — PPO 0/5 seeds ≥200 at 472M; SAC 3/3 ≥200 by 5M; TD-MPC2 6/6 by 1M.
+- **HopperStand: a graded stochastic barrier** — PPO escapes 1/4 (and only at ~60× SAC's budget); SAC solves 3/4
+  at 5M; TD-MPC2 solves at 0.65M (962, n=1→2 pending).
+
+So the durable, defensible claim is a **reliability × efficiency ordering on hopper dynamics — TD-MPC2 ≫ SAC ≫
+PPO, with orders-of-magnitude budget gaps** — hardest exactly where the dynamics are unstable and
+contact-timing-critical, categorical only for the hop itself. Both of today's framings ("gait-specific", then
+"morphology-categorical") died under one more seed each; this one is stated at the n we actually have.
 
 ## 2. Level vs efficiency: the 4× budget test
 

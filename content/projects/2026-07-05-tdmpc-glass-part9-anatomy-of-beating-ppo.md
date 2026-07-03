@@ -53,8 +53,9 @@ picture, with five no-wall control tasks:
 - **HopperHop: a categorical on-policy wall, budget-indexed for the rest** — PPO **0/5 ≥200 at 472M**; SAC crosses
   200 in **5/8 seeds by 5M and 5/5 by ~8M** (crossings at 4.1–7.7M in the 20M runs); TD-MPC2 **6/6 by ~1M**.
 - **HopperStand: a graded stochastic barrier** — PPO escapes **2/8** at 285M (681/749; six walled ≤154); SAC
-  **0/3 at 1M** but **5/6 by 5M**; TD-MPC2 **2/2 by ≤0.9M** (962/948). The 1M column is the clean matched-budget
-  read: TD-MPC2 solves both hopper tasks at a budget where neither model-free method solves either.
+  **0/3 at 1M** but **5/6 by 5M**; TD-MPC2 **3/3 by ≤0.9M** (962 / 948 / 943 — the third seed by just 0.3M). The
+  1M column is the clean matched-budget read: TD-MPC2 solves both hopper tasks at a budget where neither
+  model-free method solves either.
 
 So the durable, defensible claim is a **reliability × efficiency ordering on hopper dynamics — TD-MPC2 ≫ SAC ≫
 PPO, with orders-of-magnitude budget gaps** — hardest exactly where the dynamics are unstable and
@@ -95,10 +96,11 @@ and the policy trained from it — is individually necessary (each ablation repr
 head matters only for planning; and the self-predictive consistency loss is the only component whose removal
 merely degrades.**
 
-**Replicated on a third task (WalkerRun, n=2/arm, 1M, added 2026-07-03):** full 731/680 (MPPI) & 711/671 (π);
-**value-ablated 56/28 & 44/37 — dead; policy-ablated 76/64 & 48/35 — dead; reward-ablated MPPI dead but π at
-full strength 711/728; consistency-ablated 547/522 & 674/570 — the mildest cut (~25%) yet again.** The mechanism
-table now spans three tasks (CheetahRun n=2, HopperHop n=4, WalkerRun n=2) with the same shape everywhere.
+**Replicated on a third task (WalkerRun, decisive arms at n=4, 1M):** full 731/680/699/723 (MPPI best);
+**value-ablated 56/28/39/38 — dead 4/4; policy-ablated 76/64/83/53 — dead 4/4** (seeds 3/4 dead through ≥900k);
+reward-ablated MPPI dead but π at full strength 711/728 (n=2); consistency-ablated 547/522 & 674/570 — the
+mildest cut yet again. The mechanism table now spans three tasks (CheetahRun n=2, HopperHop value-cell n=6,
+WalkerRun n=4) with the same shape everywhere.
 
 > **"The world model explores" decomposes into: the TD value signal trained through the latent is what discovers
 > and ranks behavior; the self-predictive dynamics loss is a helpful regularizer, not the key.** This rhymes with

@@ -50,9 +50,11 @@ wall as morphology-categorical. **Extending to n=4 corrected that:** PPO Stand =
 seed in four escapes**; and SAC Stand = 492 / 754 / 464 / **33 — one seed in four fails**. The honest final
 picture, with five no-wall control tasks:
 
-- **HopperHop: a categorical on-policy wall** — PPO 0/5 seeds ≥200 at 472M; SAC 3/3 ≥200 by 5M; TD-MPC2 6/6 by 1M.
-- **HopperStand: a graded stochastic barrier** — PPO escapes 1/4 (and only at ~60× SAC's budget); SAC solves 3/4
-  at 5M; TD-MPC2 solves 2/2 within 1M (962 / 948).
+- **HopperHop: a categorical on-policy wall, budget-indexed for the rest** — PPO **0/5 ≥200 at 472M**; SAC crosses
+  200 in **5/8 seeds by 5M and 5/5 by ~8M** (crossings at 4.1–7.7M in the 20M runs); TD-MPC2 **6/6 by ~1M**.
+- **HopperStand: a graded stochastic barrier** — PPO escapes **2/8** at 285M (681/749; six walled ≤154); SAC
+  **0/3 at 1M** but **5/6 by 5M**; TD-MPC2 **2/2 by ≤0.9M** (962/948). The 1M column is the clean matched-budget
+  read: TD-MPC2 solves both hopper tasks at a budget where neither model-free method solves either.
 
 So the durable, defensible claim is a **reliability × efficiency ordering on hopper dynamics — TD-MPC2 ≫ SAC ≫
 PPO, with orders-of-magnitude budget gaps** — hardest exactly where the dynamics are unstable and

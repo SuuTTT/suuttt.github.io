@@ -66,6 +66,13 @@ So the durable, defensible claim is a **reliability × efficiency ordering on ho
 PPO, with orders-of-magnitude budget gaps** — hardest exactly where the dynamics are unstable and
 contact-timing-critical, categorical only for the hop itself. Both of today's framings ("gait-specific", then
 "morphology-categorical") died under one more seed each; this one is stated at the n we actually have.
+*(TD-MPC2 Stand later firmed to **5/5**: 962/948/943/959/959, all within 1M.)*
+
+**Discriminator (07-04 evening, AcrobotSwingup — unstable but *contact-free*):** PPO learns fine (267–344, n=4
+at 285M) — **no wall**, so the on-policy wall requires contact-criticality, not instability alone. And SAC is
+slow *and* inconsistent here even at 20M (42/207; 54–89 at 5M) — the off-policy advantage is also
+task-class-specific, not a generic superiority. **TD-MPC2 leads on both task classes (429/422 within 1M)** —
+of the three methods, the value-pathway advantage is the most portable.
 
 ## 2. Level vs efficiency: the 4× budget test
 

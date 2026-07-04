@@ -56,9 +56,10 @@ picture, with five no-wall control tasks:
 - **HopperStand: a graded but near-categorical barrier** — PPO escapes **2/16** (final, 07-04: eight more
   seeds at the full 285M budget ALL walled at 105–195; both escapes — 681/749 — came from earlier 120M runs);
   SAC
-  **0/3 at 1M** but **5/6 by 5M**; TD-MPC2 **3/3 by ≤0.9M** (962 / 948 / 943 — the third seed by just 0.3M). The
-  1M column is the clean matched-budget read: TD-MPC2 solves both hopper tasks at a budget where neither
-  model-free method solves either.
+  **0/3 at 1M and 7/10 by 5M** (final, 07-04: solves 464–932; fails 33/100/300); TD-MPC2 **3/3 by ≤0.9M**
+  (962 / 948 / 943 — the third seed by just 0.3M). The final three-method gradient on Stand — **TD-MPC2 3/3 ≫
+  SAC 7/10 ≫ PPO 2/16** — and the matched-1M column (TD-MPC2 solves both hopper tasks at a budget where neither
+  model-free method solves either) are the paper-grade statements.
 
 So the durable, defensible claim is a **reliability × efficiency ordering on hopper dynamics — TD-MPC2 ≫ SAC ≫
 PPO, with orders-of-magnitude budget gaps** — hardest exactly where the dynamics are unstable and

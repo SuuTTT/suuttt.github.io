@@ -81,10 +81,11 @@ methods keep erasing model-based "level" gaps; the efficiency gap is the durable
 Per-loss ablation (zero ONE loss term, from scratch, mask verified live in logs; MPPI + π-only eval returns):
 
 **CheetahRun (decisive arms at n=4 as of 07-04, 1M):** full = 738/782/721/795 (MPPI bests). Ablate **value →
-16/37/58 — dead 4/4** (π ≤12). Ablate **reward → MPPI 5 but π 761** (planning-only, partly by construction —
-MPPI scores rollouts with it; n=2). Ablate **policy prior → MPPI limps at 123/192/141 while π is dead at
-2.5/9/11 — n=4.** Ablate **consistency — the self-predictive latent-dynamics loss itself → 367/541, the
-smallest drop of the four (n=2).**
+16/37/58 — dead 4/4** (π ≤12). Ablate **reward → MPPI dead at 5/31/26 but π at FULL strength 761/796/805 — n=4** (planning-only, partly by
+construction — MPPI scores rollouts with it). Ablate **policy prior → MPPI limps at 123/192/141 while π is dead
+at 2.5/9/11 — n=4.** Ablate **consistency — the self-predictive latent-dynamics loss itself → 367/516/558 MPPI
+(π 541/575/623), the smallest drop of the four — n=4.** *(07-04: with these, every arm of the five-loss ablation
+is at n≥4 on all three tasks.)*
 
 **HopperHop — the exploration task (all five arms at n=4; the headline value cell firmed to n=6 on 07-03):**
 full finds the gait on 6/6 seeds (MPPI best 287–570). **Value-ablated: 0.0 / 0.0 / 3.2 / 0.0 / 0.0 / 0.1 (n=6) —

@@ -80,10 +80,11 @@ methods keep erasing model-based "level" gaps; the efficiency gap is the durable
 
 Per-loss ablation (zero ONE loss term, from scratch, mask verified live in logs; MPPI + π-only eval returns):
 
-**CheetahRun (complete, n=2, 1M):** full = 738/782 (MPPI/π). Ablate **value → 16/12** (everything dies). Ablate
-**reward → MPPI 5 but π 761** (planning-only, partly by construction — MPPI scores rollouts with it). Ablate
-**policy prior → 123/2.5**. Ablate **consistency — the self-predictive latent-dynamics loss itself → 367/541, the
-smallest drop of the four.**
+**CheetahRun (decisive arms at n=4 as of 07-04, 1M):** full = 738/782/721/795 (MPPI bests). Ablate **value →
+16/37/58 — dead 4/4** (π ≤12). Ablate **reward → MPPI 5 but π 761** (planning-only, partly by construction —
+MPPI scores rollouts with it; n=2). Ablate **policy prior → MPPI limps at 123/192/141 while π is dead at
+2.5/9/11 — n=4.** Ablate **consistency — the self-predictive latent-dynamics loss itself → 367/541, the
+smallest drop of the four (n=2).**
 
 **HopperHop — the exploration task (all five arms at n=4; the headline value cell firmed to n=6 on 07-03):**
 full finds the gait on 6/6 seeds (MPPI best 287–570). **Value-ablated: 0.0 / 0.0 / 3.2 / 0.0 / 0.0 / 0.1 (n=6) —
@@ -99,9 +100,9 @@ merely degrades.**
 
 **Replicated on a third task (WalkerRun, decisive arms at n=4, 1M):** full 731/680/699/723 (MPPI best);
 **value-ablated 56/28/39/38 — dead 4/4; policy-ablated 76/64/83/53 — dead 4/4** (seeds 3/4 dead through ≥900k);
-reward-ablated MPPI dead but π at full strength 711/728 (n=2); consistency-ablated 547/522 & 674/570 — the
-mildest cut yet again. The mechanism table now spans three tasks (CheetahRun n=2, HopperHop value-cell n=6,
-WalkerRun n=4) with the same shape everywhere.
+reward-ablated MPPI dead (44/44) but π at full strength 711/728/681/684 (n=4); consistency-ablated 547/522 &
+533/483 (π to 667) — the mildest cut yet again, now n=4. The mechanism table now spans three tasks — **CheetahRun
+n=4, HopperHop value-cell n=6, WalkerRun n=4 on every arm** — with the same shape everywhere.
 
 > **"The world model explores" decomposes into: the TD value signal trained through the latent is what discovers
 > and ranks behavior; the self-predictive dynamics loss is a helpful regularizer, not the key.** This rhymes with
@@ -117,6 +118,26 @@ still interesting: **the feudal agent manufactured that dense signal itself** (i
 to *self-proposed* subgoals; no privileged goal information), whereas the control had to be handed the true goal.
 This independently replicates Nachum et al. (2019): most of HRL's measurable benefit reproduces on flat agents
 given better exploration/shaping.
+
+## 4b. Addendum (07-04): does the ordering generalize? The humanoid says no — it *inverts*
+
+The hopper result predicts "TD-MPC2 ≫ SAC ≫ PPO wherever dynamics are unstable and contact-critical." We tested
+that prediction on a second unstable morphology, **HumanoidWalk** (21-DoF), same three-arm design. The prediction
+failed — informatively. Every method broke, each along a **different axis**:
+
+- **PPO: numerically unusable — reward=nan under all 3 configs tried** (brax defaults; a tuned-WalkerRun
+  transplant with 512³ networks + reward_scaling 0.1; same + reward_scaling 1.0 + lr 1e-4). Notably there is *no
+  official tuned humanoid config* in mujoco_playground's DMC params — the fragility is upstream reality, not our
+  bug.
+- **TD-MPC2: fails at 1M (best 30.4, falls every episode), and the 4M run diverged to loss=nan at ~2.5M** (seed
+  41; seed 42's divergence test is still running — this cell is marked pending).
+- **SAC: the only robust method — 4/5 seeds solve (625–909 at 5M), 1/5 hit a nan of its own.**
+
+So the reliability ordering is **task-class-dependent, and on the high-DoF humanoid it inverts**: plain
+off-policy SAC beats both the on-policy and the model-based method — not on sample-efficiency but on *working at
+all*. Config/numerical fragility is a distinct failure axis from exploration, and any "X beats PPO" claim needs
+to say which axis it lives on. This sharpens rather than weakens the paper: the hopper ordering is real, matched,
+and quantified — and it is a statement about hopper-class dynamics, not a universal law.
 
 ## 5. What this week actually taught
 

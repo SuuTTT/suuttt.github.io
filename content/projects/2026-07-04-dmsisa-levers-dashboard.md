@@ -30,6 +30,9 @@ objective (\\(|\Delta|=1.15\times10^{-7}\\)).
 decisive efficiency win. **Matching isn't beating** — so the rest of this page is the systematic search
 for a lever that turns parity into a significant return win.
 
+
+> **Update 2026-07-04 (same-hardware reversal):** the cross-hardware SISA baseline (walker 725) was a high-variance seed draw. On **equal hardware+seeds** (g4x), SISA walker = **606±32 (n=3)** vs DM-SISA(λ=0) **676±39 (n=5)** — DM-SISA trends **above** (Δ+71, 1-sided *p*=0.036; 2-sided 0.07). If the baseline holds at n=5, the core method (λ=0) **beats** SISA same-hardware — no new lever needed. Confirming now.
+
 ## 1. The RL × Structural-Entropy periodic table
 
 What has ever been tried at the RL+SE intersection (the SIDM family), and where DM-SISA moves:
@@ -54,7 +57,7 @@ Target: **mean > SISA, \\(p<0.05\\)** at n=5.
 
 | # | lever | idea | status | result (walker / cheetah, n) |
 |---|---|---|---|---|
-| L1 | λ=0 (no SE penalty) | remove over-regularization | ✅ | 676±39 / 349±101 (n5) — parity |
+| L1 | λ=0 (no SE penalty) | remove over-regularization | 🔄 **promising** | 676±39 (n5) vs same-hw SISA 606±32 (n3): Δ+71, p=0.036 1-sided — trending beat |
 | L2 | λ=0.01 (default) | shows over-regularization | ✅ | 562±41 (n2) — **−22%** |
 | L3 | λ=0.003 | small penalty may help | 🔄 | 735.8 (n1) — promising, need n5 |
 | L4 | λ∈{0.001,0.002,0.005} | bracket the optimum | 🔄 | pending |
@@ -82,4 +85,4 @@ If none of L3–L10 gives \\(p<0.05,\ \text{mean}>\text{SISA}\\) at n=5, DM-SISA
 16,000×-cheaper* method → an efficiency + mechanism paper, not a "beats SISA" paper. We will say so. This
 dashboard updates as the ~150-run campaign (3× 4-GPU boxes) completes — wins **and** the negatives.
 
-*Last updated: 2026-07-04. Live status in the [levers doc](https://github.com/SuuTTT/dm-sisa/blob/main/docs/LEVERS.md).*
+*Last updated: 2026-07-04 (same-hw signal). Live status in the [levers doc](https://github.com/SuuTTT/dm-sisa/blob/main/docs/LEVERS.md).*

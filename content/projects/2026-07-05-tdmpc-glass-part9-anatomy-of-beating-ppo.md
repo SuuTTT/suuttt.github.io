@@ -53,7 +53,8 @@ picture, with five no-wall control tasks:
 
 - **HopperHop: a categorical on-policy wall, budget-indexed for the rest** — PPO **0/5 ≥200 at 472M**; SAC crosses
   200 in **5/8 seeds by 5M and 5/5 by ~8M** (crossings at 4.1–7.7M in the 20M runs); TD-MPC2 **6/6 by ~1M**.
-- **HopperStand: a graded stochastic barrier** — PPO escapes **2/8** at 285M (681/749; six walled ≤154); SAC
+- **HopperStand: a graded stochastic barrier** — PPO escapes **2/8** (budgets 120–285M per seed; both escapes
+  peaked within 120M; six walled ≤154); SAC
   **0/3 at 1M** but **5/6 by 5M**; TD-MPC2 **3/3 by ≤0.9M** (962 / 948 / 943 — the third seed by just 0.3M). The
   1M column is the clean matched-budget read: TD-MPC2 solves both hopper tasks at a budget where neither
   model-free method solves either.
@@ -130,10 +131,13 @@ failed — informatively. Every method broke, each along a **different axis**:
   transplant with 512³ networks + reward_scaling 0.1; same + reward_scaling 1.0 + lr 1e-4). Notably there is *no
   official tuned humanoid config* in mujoco_playground's DMC params — the fragility is upstream reality, not our
   bug.
-- **TD-MPC2: fails at 1M (best 30.4, falls every episode); the 4M run diverged to loss=nan at ~2.5M (seed 41);
-  and — decisive — it diverges on the *easier* HumanoidStand too, by just 0.28M.** The same architecture solved
-  hopper Stand at 0.3M, so this is morphology-wide numerical divergence, not task difficulty. (Walk seeds 42–44
-  are still running the divergence-rate count; cell marked pending.)
+- **TD-MPC2 (final, 9 runs): under the default config, training diverges to loss=nan on 6/6 walk seeds (onsets
+  0.53–2.51M) and on the easier HumanoidStand (0.28M) — 7/7, effectively deterministic with variable onset; best
+  return before any nan was 30.4.** Lowering the update-to-data ratio shifts the onset stochastically rather than
+  fixing it (k_update=32 diverged at 3.13M; k_update=64 was the *only* run of nine to finish 4M) — **and the
+  nan-free survivor never learned anyway (best 21.8, flat ~20 for 4M steps).** So the humanoid failure is not
+  merely numerical: under every setting tried, TD-MPC2 does not crack the 21-DoF task at these budgets. The same
+  architecture solved hopper Stand at 0.3M.
 - **SAC: the only robust method — 4/5 seeds solve (625–909 at 5M), 1/5 hit a nan of its own.**
 
 So the reliability ordering is **task-class-dependent, and on the high-DoF humanoid it inverts**: plain

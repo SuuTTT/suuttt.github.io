@@ -130,8 +130,10 @@ failed — informatively. Every method broke, each along a **different axis**:
   transplant with 512³ networks + reward_scaling 0.1; same + reward_scaling 1.0 + lr 1e-4). Notably there is *no
   official tuned humanoid config* in mujoco_playground's DMC params — the fragility is upstream reality, not our
   bug.
-- **TD-MPC2: fails at 1M (best 30.4, falls every episode), and the 4M run diverged to loss=nan at ~2.5M** (seed
-  41; seed 42's divergence test is still running — this cell is marked pending).
+- **TD-MPC2: fails at 1M (best 30.4, falls every episode); the 4M run diverged to loss=nan at ~2.5M (seed 41);
+  and — decisive — it diverges on the *easier* HumanoidStand too, by just 0.28M.** The same architecture solved
+  hopper Stand at 0.3M, so this is morphology-wide numerical divergence, not task difficulty. (Walk seeds 42–44
+  are still running the divergence-rate count; cell marked pending.)
 - **SAC: the only robust method — 4/5 seeds solve (625–909 at 5M), 1/5 hit a nan of its own.**
 
 So the reliability ordering is **task-class-dependent, and on the high-DoF humanoid it inverts**: plain

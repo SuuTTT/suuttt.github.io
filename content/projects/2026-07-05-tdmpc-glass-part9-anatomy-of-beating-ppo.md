@@ -53,8 +53,9 @@ picture, with five no-wall control tasks:
 
 - **HopperHop: a categorical on-policy wall, budget-indexed for the rest** — PPO **0/5 ≥200 at 472M**; SAC crosses
   200 in **5/8 seeds by 5M and 5/5 by ~8M** (crossings at 4.1–7.7M in the 20M runs); TD-MPC2 **6/6 by ~1M**.
-- **HopperStand: a graded stochastic barrier** — PPO escapes **2/8** (budgets 120–285M per seed; both escapes
-  peaked within 120M; six walled ≤154); SAC
+- **HopperStand: a graded but near-categorical barrier** — PPO escapes **2/16** (final, 07-04: eight more
+  seeds at the full 285M budget ALL walled at 105–195; both escapes — 681/749 — came from earlier 120M runs);
+  SAC
   **0/3 at 1M** but **5/6 by 5M**; TD-MPC2 **3/3 by ≤0.9M** (962 / 948 / 943 — the third seed by just 0.3M). The
   1M column is the clean matched-budget read: TD-MPC2 solves both hopper tasks at a budget where neither
   model-free method solves either.

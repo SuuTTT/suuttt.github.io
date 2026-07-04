@@ -58,7 +58,7 @@ Target: **mean > SISA, \\(p<0.05\\)** at n=5.
 | L2 | λ=0.01 (default) | shows over-regularization | ✅ | 562±41 (n2) — **−22%** |
 | L3 | λ=0.003 | small penalty may help | 🔄 | 735.8 (n1) — promising, need n5 |
 | L4 | λ∈{0.001,0.002,0.005} | bracket the optimum | 🔄 | pending |
-| L5 | **policy-input injection** | give the policy the abstraction (SISA can't) | 🔄 building | pending |
+| L5 | **policy-input injection** | give the policy the abstraction (SISA can't) | 🔄 running | built+validated, trains clean; n accumulating |
 | L6 | multi-level vs flat | depth helps (graph result) | 🔄 | pending |
 | L7 | deeper (3-level) | more levels | ⏳ | — |
 | L8 | community count k1/k2 | richer partition | ⏳ | — |

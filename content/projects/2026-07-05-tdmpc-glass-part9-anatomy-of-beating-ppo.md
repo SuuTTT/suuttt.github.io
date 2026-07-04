@@ -1,6 +1,6 @@
 ---
 title: "TD-MPC-Glass, Part 9: The Anatomy of \"Beating PPO\" — What Survived Every Control"
-date: 2026-07-05
+date: 2026-07-04
 description: "The positive-chase ended with every headline claim rewritten by its own control experiment — and a sharper, truer story than any of the originals. The exploration wall is real but it is an on-policy pathology specific to gait discovery; SAC escapes it; the world model's robust advantages are consistency and ~4–5× sample-efficiency, not level; the load-bearing net is the TD value signal, not the self-predictive dynamics loss; and the hierarchy win was dense shaping in disguise. A capstone with every number disk-verified."
 layout: "post"
 showTableOfContents: true

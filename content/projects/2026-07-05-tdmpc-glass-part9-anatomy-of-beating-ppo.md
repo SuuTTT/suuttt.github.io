@@ -52,7 +52,8 @@ seed in four escapes**; and SAC Stand = 492 / 754 / 464 / **33 — one seed in f
 picture, with five no-wall control tasks:
 
 - **HopperHop: a categorical on-policy wall, budget-indexed for the rest** — PPO **0/5 ≥200 at 472M**; SAC crosses
-  200 in **5/8 seeds by 5M and 5/5 by ~8M** (crossings at 4.1–7.7M in the 20M runs); TD-MPC2 **6/6 by ~1M**.
+  200 in **6/12 seeds by 5M (final, 07-04) and 5/5 by ~8M** (crossings at 4.1–7.7M in the 20M runs); TD-MPC2
+  **6/6 by ~1M**.
 - **HopperStand: a graded but near-categorical barrier** — PPO escapes **2/16** (final, 07-04: eight more
   seeds at the full 285M budget ALL walled at 105–195; both escapes — 681/749 — came from earlier 120M runs);
   SAC

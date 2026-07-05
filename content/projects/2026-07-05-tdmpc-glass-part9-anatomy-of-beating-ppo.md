@@ -116,6 +116,12 @@ reward-ablated MPPI dead (44/44) but π at full strength 711/728/681/684 (n=4); 
 533/483 (π to 667) — the mildest cut yet again, now n=4. The mechanism table now spans three tasks — **CheetahRun
 n=4, HopperHop value-cell n=6, WalkerRun n=4 on every arm** — with the same shape everywhere.
 
+**Replicated on a FOURTH task (HopperStand, n=4/arm, 07-05) — a task the full model solves in 0.3M steps:**
+none 911–946 (all solve); **value-ablated 6–13 — dead; policy-ablated 9–34 (π ≤5) — dead**; reward-ablated MPPI
+degraded to 265–542 but **π at 944/515/943/944**; consistency-ablated 816–898 (π to 930; one seed at eval 13/20
+when written) — here the mildest cut is nearly no cut at all. Same shape, fourth task: **without the TD value
+loss, TD-MPC2 cannot even learn to stand.**
+
 > **"The world model explores" decomposes into: the TD value signal trained through the latent is what discovers
 > and ranks behavior; the self-predictive dynamics loss is a helpful regularizer, not the key.** This rhymes with
 > the entire campaign — from the redundancy nulls to the anti-collapse reversal, the value anchor keeps being the

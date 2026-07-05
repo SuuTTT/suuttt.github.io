@@ -33,8 +33,9 @@ On the identical MJX `HopperHop` (verified byte-for-byte — same registry env, 
 - **PPO (tuned config): peak 53.8, 0/5 seeds ≥200, through 472M steps/seed.** Categorically walled.
 - **SAC (tuned config): 3/3 seeds cross 200 within 5M.** The wall is an **on-policy pathology** — replay +
   entropy exploration escapes it.
-- **TD-MPC2: ~282 at 1M (n=4, best 367); 5M bests 295–481 (n=4, mean ~412)** — the anchor spread widened
-  honestly with two more seeds (393/295 joined 477/481).
+- **TD-MPC2: ~282 at 1M (n=4, best 367); 5M bests 295–610, mean 420 ± 113 (final, n=12, 07-05)** — the
+  flagship efficiency anchor at publication n: eight fresh seeds joined the original four (best 610, worst 295;
+  a wide but honest spread).
 
 And the wall does not generalize: FingerTurnHard PPO ≈973 (3/3, no wall); Pendulum solves once an upstream
 config-case bug (`PendulumSwingUp` vs `PendulumSwingup` silently skipping the tuned override) is fixed — peaks

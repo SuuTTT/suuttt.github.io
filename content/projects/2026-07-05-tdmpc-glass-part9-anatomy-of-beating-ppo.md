@@ -124,6 +124,12 @@ reward-ablated MPPI dead (44/44) but π at full strength 711/728/681/684 (n=4); 
 533/483 (π to 667) — the mildest cut yet again, now n=4. The mechanism table now spans three tasks — **CheetahRun
 n=4, HopperHop value-cell n=6, WalkerRun n=4 on every arm** — with the same shape everywhere.
 
+**Sufficiency upgrade (07-05 evening): the necessity table's mildest cut is now a removability result.**
+Training consistency-OFF from scratch at the full 5M budget (n=4): **165 / 475 / 481 / 511** vs the full model's
+n=12 anchor 420 ± 113 (median ~385). Three seeds land at the *top* of the full band — and reached 440+ by ~2M,
+faster than typical full-model seeds; one seed is low (165, below the full floor of 295). On HopperHop the
+"world model" loss is removable for typical seeds; what remains of its job is worst-seed insurance.
+
 **Replicated on a FOURTH task (HopperStand, n=4/arm, 07-05) — a task the full model solves in 0.3M steps:**
 none 911–946 (all solve); **value-ablated 6–13 — dead; policy-ablated 9–34 (π ≤5) — dead**; reward-ablated MPPI
 degraded to 265–542 but **π at 944/515/943/944**; consistency-ablated 816–898 (π to 930; one seed at eval 13/20

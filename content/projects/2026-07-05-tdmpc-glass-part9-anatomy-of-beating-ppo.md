@@ -55,7 +55,9 @@ picture, with five no-wall control tasks:
   200 in **6/12 seeds by 5M (final, 07-04) and 5/5 by ~8M** (crossings at 4.1–7.7M in the 20M runs); TD-MPC2
   **6/6 by ~1M**. *(07-05: the wall also survives the standard exploration knob — entropy_cost ×3 and ×10 leave
   PPO at peaks 4–74, n=2 each at 150M, no better than baseline; under-exploration hyperparameters are not the
-  explanation.)*
+  explanation. Instructive contrast on the **graded** Stand barrier below: entropy ×3 lifted one of two seeds
+  over — 627 vs 118 — while ×10 walled both at 132/141. The knob can occasionally shift a graded barrier; it
+  never dents the categorical wall.)*
 - **HopperStand: a graded but near-categorical barrier** — PPO escapes **2/16** (final, 07-04: eight more
   seeds at the full 285M budget ALL walled at 105–195; both escapes — 681/749 — came from earlier 120M runs);
   SAC

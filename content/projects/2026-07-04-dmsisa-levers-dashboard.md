@@ -15,6 +15,10 @@ tags: ["reinforcement-learning", "structural-entropy", "SISA", "DM-SISA", "dashb
 > Paper: [dmsisa-paper](https://github.com/SuuTTT/dmsisa-paper). Every number is from a results artifact;
 > parity and losses are reported as carefully as wins.
 
+
+
+> **⚠️ CORRECTION (2026-07-05):** the reliable box reached n=5 on the full 4-way comparison and it *retracts* an earlier claim. The "over-regularization mechanism" (λ=0.01 hurts return) was based on a 2-seed sample (562); at n=5 λ=0.01 scores **774 ≥ λ=0's 676** on both tasks — the SE penalty has **no significant effect**. And there is **no correction-surviving beat**: walker DM-SISA-vs-SISA is p=0.016 raw but 0.064 after multiple-comparison correction, leans on a SISA seed collapse, and doesn't beat plain RAD-SAC; cheetah reverses. The honest verdict: **DM-SISA is statistically inseparable from SISA and RAD-SAC on return, under high variance — the contribution is the differentiable multi-level formulation + 16,000× efficiency, not return.** This is the fifth signal to wash out under more seeds; the discipline caught it before it stuck.
+
 ## The setup in one paragraph
 
 **SISA** (Xianghua Zeng et al.) abstracts an RL agent's states by minimizing structural entropy over a

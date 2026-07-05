@@ -52,9 +52,9 @@ seed in four escapes**; and SAC Stand = 492 / 754 / 464 / **33 — one seed in f
 picture, with five no-wall control tasks:
 
 - **HopperHop: a categorical on-policy wall, budget-indexed for the rest** — PPO **0/5 ≥200 at 472M**; SAC crosses
-  200 in **6/12 seeds by 5M (final, 07-04) and 5/7 by 8M** (revised 07-05: the 20M cohort crossed 5/5 at
-  4.1–7.7M, but two fresh direct-8M seeds both walled at ~140 — SAC's crossing is a rate, not a certainty);
-  TD-MPC2 **6/6 by ~1M**. *(07-05: the wall also survives the standard exploration knob — entropy_cost ×3 and ×10 leave
+  200 in **6/12 seeds by 5M (final, 07-04) and 6/9 by 8M** (final 07-05: the 20M cohort crossed 5/5 at
+  4.1–7.7M, but four fresh direct-8M seeds went 1/4 — 374 vs 117–140 — SAC's crossing by 8M is a ~2/3 rate,
+  not a certainty); TD-MPC2 **6/6 by ~1M**. *(07-05: the wall also survives the standard exploration knob — entropy_cost ×3 and ×10 leave
   PPO at peaks 4–74, n=2 each at 150M, no better than baseline; under-exploration hyperparameters are not the
   explanation. Instructive contrast on the **graded** Stand barrier below (n=4/arm final): entropy ×3 put 1/4 seeds
   over — 627 vs 118–150 — a rate consistent with the baseline's 2/16 escape lottery, not a repair; ×10 walled

@@ -31,7 +31,7 @@ decisive efficiency win. **Matching isn't beating** — so the rest of this page
 for a lever that turns parity into a significant return win.
 
 
-> **Update 2026-07-04 (same-hardware, MIXED):** the cross-hw SISA walker baseline (725) was a high-variance seed draw. On equal hardware+seeds (g4x) the picture is **task-dependent**: **walker** DM-SISA(λ=0) 676±39(n5) vs SISA 606±32(n3), Δ+71 (up); **cheetah** DM-SISA 349±101(n5) vs SISA 412±73(n5), Δ−64, *p*=0.22 (down, n.s.). The two tasks pull opposite ways *within* SISA's large seed variance → the honest read is **parity + efficiency**, not a clean beat. Completing walker n=5 for the rigorous test; whatever it shows is reported task-specifically.
+> **Update (same-hardware VERDICT — parity):** the early walker beat (Δ+71, p=0.036 at n=3 baseline) **evaporated** as more SISA seeds landed (s4=749.9 — SISA walker is high-variance), shrinking to Δ+35, **p=0.41 (n.s.)** at n=4; cheetah is Δ−64, **p=0.22 (n.s.)**. Same-hardware, DM-SISA(λ=0) **matches** SISA on both tasks — the per-task swings are SISA's seed noise, the same regression that washed out every single-seed 'win.' The honest contribution is **parity at 16,000× less cost + the over-regularization mechanism**, not a return beat. Injection/λ-tune levers still running.
 
 ## 1. The RL × Structural-Entropy periodic table
 
@@ -57,7 +57,7 @@ Target: **mean > SISA, \\(p<0.05\\)** at n=5.
 
 | # | lever | idea | status | result (walker / cheetah, n) |
 |---|---|---|---|---|
-| L1 | λ=0 (no SE penalty) | remove over-regularization | 🔄 **mixed** | same-hw walker 676 vs 606 (up), cheetah 349 vs 412 (down, p=0.22) — task-dependent, net parity |
+| L1 | λ=0 (no SE penalty) | remove over-regularization | ✅ **parity** | same-hw n.s.: walker 676 vs 642 (p=0.41), cheetah 349 vs 412 (p=0.22) — matches SISA, 16000× cheaper |
 | L2 | λ=0.01 (default) | shows over-regularization | ✅ | 562±41 (n2) — **−22%** |
 | L3 | λ=0.003 | small penalty may help | 🔄 | 735.8 (n1) — promising, need n5 |
 | L4 | λ∈{0.001,0.002,0.005} | bracket the optimum | 🔄 | pending |
@@ -85,4 +85,4 @@ If none of L3–L10 gives \\(p<0.05,\ \text{mean}>\text{SISA}\\) at n=5, DM-SISA
 16,000×-cheaper* method → an efficiency + mechanism paper, not a "beats SISA" paper. We will say so. This
 dashboard updates as the ~150-run campaign (3× 4-GPU boxes) completes — wins **and** the negatives.
 
-*Last updated: 2026-07-04 (same-hw mixed: walker up, cheetah down). Live status in the [levers doc](https://github.com/SuuTTT/dm-sisa/blob/main/docs/LEVERS.md).*
+*Last updated: 2026-07-05 (same-hw VERDICT: parity — walker beat evaporated at n4). Live status in the [levers doc](https://github.com/SuuTTT/dm-sisa/blob/main/docs/LEVERS.md).*

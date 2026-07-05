@@ -181,6 +181,11 @@ and quantified — and it is a statement about hopper-class dynamics, not a univ
 3. **Complete.** All 20 HopperHop ablation runs finished (the mid-campaign host outage turned out to be
    network-only; the jobs never stopped). Nothing in this post is pending.
 
+**What's next (07-05):** the 5M efficiency anchor is being extended to n=12 overnight (last wide-CI number);
+then this post's content gets assembled into a conference paper (matched-env wall + budget-indexed rates +
+4-task value-pathway mechanism + Acrobot/humanoid boundary results), with the redundancy-criterion paper
+(Paper A) already at submission-readiness in parallel.
+
 *Every number: campaign ledger `bet2_null_results.md` (disk paths per entry). Same-env verification, config
 audits, and the two bugs found along the way (Pendulum case mismatch; an A1 noise confound) are documented in the
 2026-07-02 full-arc review.*

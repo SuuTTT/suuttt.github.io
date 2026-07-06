@@ -130,9 +130,12 @@ Training consistency-OFF from scratch at the full 5M budget on two tasks:
   top of the full band, reaching 440+ by ~2M. Removable for typical seeds; residual role = worst-seed insurance.
 - *WalkerRun (dense)*: stripped **537/574/554/594 (mean 565)** vs full **709/705/753/782 (mean 737)** —
   a −23% gap with non-overlapping ranges, stable over the last 2.5M steps.
-The consistency loss is removable where directed exploration is the bottleneck and load-bearing where dense
-state-tracking is — the same task-class-dependence as every method ordering in this program. CheetahRun
-(third task, both arms) is running to test whether this split is a law or a two-point coincidence.
+- *CheetahRun (dense, 07-06 evening)*: stripped **527/528/516/524 (mean 524)** vs full **903/904/782/806
+  (mean 849)** — a −38% gap, non-overlapping, replicating the Walker result harder.
+The split is now a two-task law on the dense side: the consistency loss is removable where directed
+exploration is the bottleneck and load-bearing where dense state-tracking is — the same task-class-dependence
+as every method ordering in this program. Acrobot (both arms) and CartpoleSwingupSparse extend the
+exploration side overnight.
 
 **Replicated on a FOURTH task (HopperStand, n=4/arm, 07-05) — a task the full model solves in 0.3M steps:**
 none 911–946 (all solve); **value-ablated 6–13 — dead; policy-ablated 9–34 (π ≤5) — dead**; reward-ablated MPPI

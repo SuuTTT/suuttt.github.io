@@ -124,11 +124,15 @@ reward-ablated MPPI dead (44/44) but π at full strength 711/728/681/684 (n=4); 
 533/483 (π to 667) — the mildest cut yet again, now n=4. The mechanism table now spans three tasks — **CheetahRun
 n=4, HopperHop value-cell n=6, WalkerRun n=4 on every arm** — with the same shape everywhere.
 
-**Sufficiency upgrade (07-05 evening): the necessity table's mildest cut is now a removability result.**
-Training consistency-OFF from scratch at the full 5M budget (n=4): **165 / 475 / 481 / 511** vs the full model's
-n=12 anchor 420 ± 113 (median ~385). Three seeds land at the *top* of the full band — and reached 440+ by ~2M,
-faster than typical full-model seeds; one seed is low (165, below the full floor of 295). On HopperHop the
-"world model" loss is removable for typical seeds; what remains of its job is worst-seed insurance.
+**Sufficiency 2×2 (final 07-06): the "world model" loss is task-class-indexed, not uniformly removable.**
+Training consistency-OFF from scratch at the full 5M budget on two tasks:
+- *HopperHop (exploration-bound)*: stripped **165/475/481/511** vs full 420 ± 113 (n=12) — three seeds at the
+  top of the full band, reaching 440+ by ~2M. Removable for typical seeds; residual role = worst-seed insurance.
+- *WalkerRun (dense)*: stripped **537/574/554/594 (mean 565)** vs full **709/705/753/782 (mean 737)** —
+  a −23% gap with non-overlapping ranges, stable over the last 2.5M steps.
+The consistency loss is removable where directed exploration is the bottleneck and load-bearing where dense
+state-tracking is — the same task-class-dependence as every method ordering in this program. CheetahRun
+(third task, both arms) is running to test whether this split is a law or a two-point coincidence.
 
 **Replicated on a FOURTH task (HopperStand, n=4/arm, 07-05) — a task the full model solves in 0.3M steps:**
 none 911–946 (all solve); **value-ablated 6–13 — dead; policy-ablated 9–34 (π ≤5) — dead**; reward-ablated MPPI

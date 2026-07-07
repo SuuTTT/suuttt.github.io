@@ -138,8 +138,11 @@ Honest revision: our 07-06 "exploration vs dense" split — written when only Ho
 on Acrobot**, which is exploration-flavored yet shows the *largest* gap. The reading that survives all four
 tasks: the consistency loss supports MPPI rollout quality wherever *the planner carries learning* (Acrobot,
 Walker, Cheetah are all planner-led here); HopperHop — where the policy head learns the behavior directly and
-the planner mostly amplifies it — is the removable case. CartpoleSwingupSparse (both arms, in flight) is the
-first test of this revised framing.
+the planner mostly amplifies it — is the removable case. CartpoleSwingupSparse was queued as the fifth test,
+but the full-model baseline itself stalls on this sparse task (bests 0.0/0.0/1.3/0.0 at 5M, n=4 — a known
+TD-MPC2 failure mode with default exploration), so that cell is a degenerate both-fail rather than an
+informative sufficiency probe; the grid's evidentiary core stays the four tasks the full model solves. A
+separate n=8 replication of the HopperHop removable cell is finishing to confirm the lone low seed (165).
 
 **Replicated on a FOURTH task (HopperStand, n=4/arm, 07-05) — a task the full model solves in 0.3M steps:**
 none 911–946 (all solve); **value-ablated 6–13 — dead; policy-ablated 9–34 (π ≤5) — dead**; reward-ablated MPPI

@@ -124,18 +124,22 @@ reward-ablated MPPI dead (44/44) but π at full strength 711/728/681/684 (n=4); 
 533/483 (π to 667) — the mildest cut yet again, now n=4. The mechanism table now spans three tasks — **CheetahRun
 n=4, HopperHop value-cell n=6, WalkerRun n=4 on every arm** — with the same shape everywhere.
 
-**Sufficiency 2×2 (final 07-06): the "world model" loss is task-class-indexed, not uniformly removable.**
-Training consistency-OFF from scratch at the full 5M budget on two tasks:
+**Sufficiency grid (revised 07-07): removability is the exception, not a task-class rule.**
+Training consistency-OFF from scratch at the full 5M budget, four tasks in:
 - *HopperHop (exploration-bound)*: stripped **165/475/481/511** vs full 420 ± 113 (n=12) — three seeds at the
   top of the full band, reaching 440+ by ~2M. Removable for typical seeds; residual role = worst-seed insurance.
-- *WalkerRun (dense)*: stripped **537/574/554/594 (mean 565)** vs full **709/705/753/782 (mean 737)** —
-  a −23% gap with non-overlapping ranges, stable over the last 2.5M steps.
-- *CheetahRun (dense, 07-06 evening)*: stripped **527/528/516/524 (mean 524)** vs full **903/904/782/806
-  (mean 849)** — a −38% gap, non-overlapping, replicating the Walker result harder.
-The split is now a two-task law on the dense side: the consistency loss is removable where directed
-exploration is the bottleneck and load-bearing where dense state-tracking is — the same task-class-dependence
-as every method ordering in this program. Acrobot (both arms) and CartpoleSwingupSparse extend the
-exploration side overnight.
+- *WalkerRun (dense)*: stripped **537/574/554/594 (mean 565)** vs full **709/705/753/782 (mean 737)** — −23%,
+  non-overlapping.
+- *CheetahRun (dense)*: stripped **527/528/516/524 (mean 524)** vs full **903/904/782/806 (mean 849)** — −38%,
+  non-overlapping.
+- *AcrobotSwingup (exploration-flavored, 07-07 morning)*: stripped **297/233/352/256 (mean 284)** vs full
+  **533/511/513/488 (mean 511)** — **−44%, non-overlapping**.
+Honest revision: our 07-06 "exploration vs dense" split — written when only Hop and Walker were in — **breaks
+on Acrobot**, which is exploration-flavored yet shows the *largest* gap. The reading that survives all four
+tasks: the consistency loss supports MPPI rollout quality wherever *the planner carries learning* (Acrobot,
+Walker, Cheetah are all planner-led here); HopperHop — where the policy head learns the behavior directly and
+the planner mostly amplifies it — is the removable case. CartpoleSwingupSparse (both arms, in flight) is the
+first test of this revised framing.
 
 **Replicated on a FOURTH task (HopperStand, n=4/arm, 07-05) — a task the full model solves in 0.3M steps:**
 none 911–946 (all solve); **value-ablated 6–13 — dead; policy-ablated 9–34 (π ≤5) — dead**; reward-ablated MPPI

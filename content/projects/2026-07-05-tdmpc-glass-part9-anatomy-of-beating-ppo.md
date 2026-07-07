@@ -141,8 +141,9 @@ Walker, Cheetah are all planner-led here); HopperHop — where the policy head l
 the planner mostly amplifies it — is the removable case. CartpoleSwingupSparse was queued as the fifth test,
 but the full-model baseline itself stalls on this sparse task (bests 0.0/0.0/1.3/0.0 at 5M, n=4 — a known
 TD-MPC2 failure mode with default exploration), so that cell is a degenerate both-fail rather than an
-informative sufficiency probe; the grid's evidentiary core stays the four tasks the full model solves. A
-separate n=8 replication of the HopperHop removable cell is finishing to confirm the lone low seed (165).
+informative sufficiency probe; the grid's evidentiary core stays the four tasks the full model solves. The HopperHop removable cell now
+holds at **n=8**: four fresh stripped seeds land at 306/449/443/477 (mean 419), so 7 of 8 stripped seeds sit
+inside the full-model band 420±113 — removability confirmed, with the lone 165 floor-dip the only exception.
 
 **Replicated on a FOURTH task (HopperStand, n=4/arm, 07-05) — a task the full model solves in 0.3M steps:**
 none 911–946 (all solve); **value-ablated 6–13 — dead; policy-ablated 9–34 (π ≤5) — dead**; reward-ablated MPPI

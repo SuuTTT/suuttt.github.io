@@ -1,6 +1,8 @@
 ---
-title: "TD-MPC-Glass, Part 11: ~80 Iterations in Seven Phases — the Whole Journey, and Why Reweighting the World Model Fails"
-date: 2026-07-08
+title: "TD-MPC-Glass, Part 11: ~80 Iterations in Seven Phases — the Whole Journey (Living Index)"
+date: 2026-07-08T23:30:00
+weight: 1
+pinned: true
 description: "A complete retrospective of the program: roughly eighty experimental iterations across seven phases, from the 'six mirages' redundancy nulls, through the Panda manipulation solve and the beat-PPO campaign, the LeCun hierarchy/JEPA bets, the five-bet reality check, the dissection (wall + mechanism + sufficiency), and the current SOTA push. For each phase: what we tried, where the artifacts live, and the lesson that carried forward. Then a focused failure analysis of this week's two SOTA bets — value-aware and uncertainty-aware consistency — which both lose to plain uniform consistency by ~5-9%, establishing that TD-MPC2's world-model loss is near-optimal in form. The one law that survived all eighty iterations: in a value-based planner, structure and reweighting buy nothing the TD value pathway doesn't already consume."
 layout: "post"
 showTableOfContents: true
@@ -10,6 +12,11 @@ tags: ["world-models", "TD-MPC2", "PPO", "abstraction", "JEPA", "bisimulation", 
 ---
 
 {{< katex >}}
+
+> **📌 Living index — this is the running master summary of the whole program, kept pinned to the top and updated
+> in place as new results land** (last updated 2026-07-08; its date is bumped on each update to stay on top).
+> For the dated week-by-week narrative see Parts 1–10; for artifact-level detail see `ITERATION_LOG.md` in the
+> paper repo.
 
 > This is the whole map. Roughly **eighty experimental iterations** over the life of the program, grouped into
 > seven phases, each with what it tried, where the artifacts are, and the lesson it left behind — followed by a

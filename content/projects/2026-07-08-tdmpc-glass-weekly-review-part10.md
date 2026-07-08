@@ -51,20 +51,98 @@ questions into five falsifiable bets:
 ## Act II — what survived contact with the data (Part 7)
 
 [Part 7](https://suuttt.github.io/projects/2026-07-03-tdmpc-glass-part7-five-bets-resolved/) is where the week
-turned. The scoreboard, all multi-seed and matched-budget:
+turned. Five bets, all multi-seed and matched-budget. Verdicts first, then the experiments and the data behind each.
 
-| Bet | Result |
-|---|---|
-| A — planning-as-exploration | **Refuted.** A1 from scratch on HopperHop (n=3, 80k) mildly reversed; on WalkerRun (n=3, 140k) null; **decisive** on CartpoleSwingupSparse (n=3, 300k) — steering the planner toward novelty did *not* crack the sparse task a reactive policy fails. |
-| A (novelty-MPPI half) | **Closed null.** Disagreement/RND bonuses inside the planner, β∈{0.3,1.0}, HopperHop 1M, then a *matched-seed* vanilla control: novelty **worse on 4/4 same-seed pairs** (442/509/321/359 → 5.6/285/259/274), one catastrophic break. |
-| C — variance reduction | **Null** (n=4–5). Structure didn't tighten the seed spread either. |
-| D — pure-JEPA on DMControl | **Reversal, firmed** (WalkerWalk/CheetahRun/ReacherEasy, n=3): the anti-collapse term that *helped* geometric goal-conditioned nav **hurts** value-based control. Pixel-JEPA (D3): null (30 runs). |
-| E / D1 — SE-structured latent | **Hurts**, like uniformity; SE+uniformity shows no synergy on TD-MPC2 (n=3, L16). |
+| Bet | What it claimed | Verdict |
+|---|---|---|
+| A — planning-as-exploration | the planner *seeks* novel states a policy can't | **Refuted** |
+| C — glass as variance-reduction | structure lowers seed variance even at tied mean | **Null** |
+| D — pure-JEPA anti-collapse | a decoder-free predictor collapses without it | **Reversed** |
+| E — SE-structured latent | structural entropy is the right anti-collapse | **Hurts** |
+| B — behavioral-prior taxonomy | injected controllers raise the ceiling | **Sample-eff only** |
 
-Four of five bets came back null-to-harmful, and the one "positive" (a learned 2-level feudal hierarchy beating flat)
-was preliminary and, on inspection, attributable to signal density rather than abstraction. **This is the pivot
-point of the week.** Every constructive attempt to *add* structure to win reproduced the program's oldest finding:
-the TD value pathway is the engine, and structure the value head doesn't consume is redundant.
+#### Bet A — is planning a directed-exploration operator?
+
+The claim: TD-MPC2 beats PPO because the MPPI planner actively *explores* — it seeks novel states a reactive policy
+never reaches. We tested it with a same-weights plan-vs-policy ablation, escalating to a decisive sparse task. On a
+learnable dense task (WalkerRun, n=3) planning leads through the competence phase then **converges to the same
+ceiling** — a speed effect, and it actually *narrows* late-training state coverage (directed exploitation onto the
+gait manifold, not exploration):
+
+| step | PLAN return | PI-only return |
+|---|---|---|
+| 50k | 335 | 186 |
+| 90k | 408 | 247 |
+| 140k | 480 | 446 (converged) |
+
+The make-or-break test was a sparse, exploration-hard, learnable task — CartpoleSwingupSparse (n=3, 300k). Does
+planning discover the sparse reward where policy-only stalls? **No — policy-only discovers it *earlier*:**
+
+| metric | PLAN | PI-only |
+|---|---|---|
+| reward-discovery rate | 3/3 | 3/3 |
+| mean discovery step | 156,672 | **140,032** |
+| final return | 454 | 239 |
+
+Planning's real value is *post-discovery exploitation*, not exploration. The other half of Bet A — novelty bonuses
+(disagreement/RND) inside the planner on HopperHop 1M, with a **matched-seed** vanilla control — was worse on 4/4:
+
+| seed | vanilla | + novelty |
+|---|---|---|
+| 61 | 442.3 | 5.6 (broke) |
+| 62 | 508.5 | 284.6 |
+| 63 | 321.4 | 258.7 |
+| 64 | 359.4 | 273.8 |
+
+**Refuted:** planning is a sample-efficiency + exploitation operator, not a directed-exploration one.
+(`b3060b:exp/proposal_A1_coverage/`.)
+
+#### Bet C — does glass reduce seed variance even when the mean ties?
+
+Out-of-sample across all 16 tasks: mean seed-sd **glass 123.2 vs TD-MPC2 114.5** — glass is *higher* variance;
+lower-sd on only 8/16, better worst-seed 9/16 (coin flips), and glass has its own collapses TD-MPC2 avoids
+(HopperHop 0 vs 179). **Null** — no variance-reduction effect. (`b3060:exp/proposal_C_variance/`.)
+
+#### Bet D — does a "proper" JEPA collapse without an anti-collapse term?
+
+A pure decoder-free self-predictive latent (encoder + jumpy predictor + EMA target, no reward/value/policy),
+frozen-encoder ridge probes, three tasks (n=3) plus a pixel version (30 runs). The premise was **falsified** — a
+pure JEPA does *not* collapse; the predictor+EMA (BYOL) asymmetry prevents it with no anti-collapse term at all, and
+adding one *hurts*:
+
+| arm (WalkerWalk) | geom R² | value R² | eff-rank |
+|---|---|---|---|
+| none (no anti-collapse) | **0.795** | **0.304** | 5 |
+| + uniformity | 0.583 | 0.121 | 40 |
+
+Uniformity *maximizes* eff-rank yet *destroys* the readouts — the same inverse eff-rank↔decodability pattern held
+on pixels. The Part-5 "anti-collapse taxonomy" **reversed**: anti-collapse is load-bearing only in the narrow
+closed-loop nav regime where the latent actually collapses; on broad DMControl data it's neutral-to-harmful.
+(`exp/proposal_D2_pure_jepa/`, `exp/proposal_D3_pixel_jepa/`.)
+
+#### Bet E — structural-entropy latent on TD-MPC2
+
+SE anti-collapse added to the value-anchored TD-MPC2 latent (fixed-λ, return-AUC, n=3):
+
+| task | default | SE | uniformity | SE+unif |
+|---|---|---|---|---|
+| CheetahRun | 58.9 | 23.4 | 36.6 | 29.0 |
+| WalkerWalk | 293.8 | 110.3 | 89.9 | 62.5 |
+| FingerSpin | 249.4 | 214.4 | 171.8 | 63.8 |
+
+**default > SE on every task**; SE+uniformity is worse than either alone (no synergy). On a value-sufficient latent
+the right anti-collapse is *none-extra*. **Hurts.**
+
+#### Bet B — behavioral-prior taxonomy
+
+A matched-budget-controlled sweep confirmed the campaign law: injected controllers buy **sample-efficiency where the
+actuated DOF match the goal DOF** (ReacherHard OSC ~3× faster), and are dead weight or an anchor on unfit tasks. No
+ceiling gain survives a same-budget PPO control.
+
+**The tally: four of five bets came back null-to-harmful**, and the one preliminary positive (a learned 2-level
+feudal hierarchy beating flat) was attributable to signal density, not abstraction. This is the pivot point of the
+week: every constructive attempt to *add* structure to win reproduced the program's oldest finding — the TD value
+pathway is the engine, and structure the value head doesn't consume is redundant.
 
 So instead of asking "what can we add to beat PPO," we asked the sharper question: **why does the planner beat PPO at
 all, and what inside it is doing the work?**

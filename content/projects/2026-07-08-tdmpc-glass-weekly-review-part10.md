@@ -263,6 +263,28 @@ claim without a matched multi-seed win in a niche where structure isn't already 
 
 A working session of nine questions that sharpened the above.
 
+**Primer — TD-MPC2's five losses, and why "consistency" *is* the world model.** Everything below hinges on knowing
+what each loss does. TD-MPC2 encodes an observation to a (SimNorm-normalized) latent \\(z_t = \text{enc}(o_t)\\) and
+trains four heads jointly:
+
+| Loss | What it trains | What it computes | Removable? (our ablation + sufficiency) |
+|---|---|---|---|
+| **consistency** | encoder + **latent dynamics** | roll the dynamics open-loop \\(\hat z_{t+1}=\text{dyn}(z_t,a_t)\\) and match the *encoded* next obs \\(\bar z_{t+1}=\text{enc}(o_{t+1})\\) (stop-grad): \\(\lVert \hat z_{t+1}-\bar z_{t+1}\rVert^2\\) | **removable on HopperHop (n=8); load-bearing on planner-led tasks −23/−38/−44%** |
+| **value (Q)** | the critic | TD target \\(r+\gamma V(z_{t+1})\\), regressed by a Q-ensemble | **individually fatal, every task** (without it the agent can't even stand) |
+| **policy** | the actor / planner seed | policy prior trained to maximize Q | **individually fatal, every task** |
+| **reward** | reward head (planner scoring) | predict the (two-hot) reward \\(r(z_t,a_t)\\) | partial — the planner loses reward-scoring but the *policy still reaches full strength* |
+
+The **consistency loss is the one that makes the latent dynamics *predictive*** — it is the JEPA-style
+self-prediction objective (predict your own future latent), i.e. the part that turns the network into a *world
+model* you can roll forward and plan over. The value/policy/reward heads are the RL + planning machinery, not a
+predictive model of the world. That is precisely why we call consistency "the world-model loss," and why its
+removability is the load-bearing question of Paper 4: it isolates *the world model itself* from the RL engine. The
+answer — value/policy fatal, consistency the mildest cut — is exactly what says **the engine is the TD value
+pathway, and the world model is a rollout-quality regularizer on top of it.** When you strip consistency, the
+encoder+dynamics still receive gradients *through* the value/reward/policy losses, so the latent stays
+value-relevant; the dynamics just stop being explicitly self-supervised to predict — which costs accuracy only on
+tasks whose return depends on precise multi-step rollouts (the dense/planner-led ones), not on HopperHop.
+
 **Q1 — For Bet A, the two tables just show planning gets *higher return*. How did we conclude that's exploitation,
 not exploration?** Because "higher return" and "more exploration" are different axes, and we measured the
 exploration axis directly. Exploration = discovering new states / finding the reward (measured by state coverage
@@ -306,14 +328,32 @@ V-JEPA 2-AC and DINO-WM both learn a (frozen-encoder) latent dynamics model and 
 LeCun's H-JEPA vision is explicitly *planning* (energy-based inference), not reward-maximizing RL. They largely
 *avoid* the learned value/policy that TD-MPC2 relies on — which, given our finding that the value pathway is the
 engine, is precisely why they target goal-conditioned tasks (a goal-image distance substitutes for value) rather
-than dense-reward control.
+than dense-reward control. **How *we* used JEPA:** our H-JEPA arm (#51–#57) built a faithful decoder-free
+hierarchical JEPA — encoder + latent predictor + EMA target + VICReg anti-collapse, a 2-level model with a
+high-level latent-subgoal — and drove it two ways: a reactive high-level selector, and a **high-level latent-MPPI
+planner** (the same "JEPA + planning" recipe the field uses). We evaluated it on PandaPickCube (multi-seed **null** —
+the bottleneck was the low-level *motor primitive* that never learned to reach, not the abstraction) and on
+closed-loop nav (the collapse studies). Separately we used JEPA as a pure *representation probe* — frozen-encoder
+geometry/value readouts (D2/D3) — and added SE/uniformity as anti-collapse *terms* on both pure-JEPA and TD-MPC2's
+latent (D1). So across the program JEPA served as (i) a hierarchical controller with latent planning, and (ii) a
+representation-quality probe — never as a stand-alone RL learner.
 
 **Q5 — What RL does TD-MPC2 use — SAC, PPO, on- or off-policy?** **Off-policy**, replay-buffer, and *not* PPO or
 SAC — it's its own model-based method whose model-free core is a **TD actor-critic** (a TD-learned Q/value ensemble
 + a policy prior), closest in DNA to an off-policy deterministic-policy actor-critic (SAC-family), plus a learned
 world model and **MPPI planning** at deploy. So the contrast in our benchmark is three-way: PPO (on-policy) hits the
 wall, SAC (off-policy) partly clears it, TD-MPC2 (off-policy TD actor-critic + planning) clears it best — and our
-ablation shows the TD value + policy losses are the engine, consistent with "off-policy TD actor-critic."
+ablation shows the TD value + policy losses are the engine, consistent with "off-policy TD actor-critic." *Briefly,
+what "TD actor-critic" means and how the three differ:* a **critic** learns a value/Q by **temporal-difference
+bootstrapping** (\\(Q(s,a)\leftarrow r+\gamma Q(s',a')\\) — it updates its estimate toward its *own* next-step
+estimate), and an **actor** (policy) is trained to maximize that critic. **PPO** is an actor-critic too but
+**on-policy** and **policy-gradient**: no replay buffer, it learns from fresh rollouts with a clipped policy update
+and Monte-Carlo/GAE returns (no TD-bootstrapped Q) — stable but sample-hungry. **SAC** is an **off-policy TD**
+actor-critic: replay buffer, a bootstrapped soft-Q, and an entropy-regularized stochastic policy — sample-efficient.
+**TD-MPC2** shares SAC's DNA (off-policy, replay buffer, TD-learned Q-ensemble + policy prior) but adds a learned
+world model and swaps stochastic exploration for **MPPI planning** at deploy. So the axis that matters for the wall
+is on-policy (PPO, throws data away) vs off-policy TD-bootstrapping (SAC/TD-MPC2, reuses data and can plan) — which
+is why the two off-policy methods clear the contact-critical wall and PPO does not.
 
 **Q6 — Why didn't abstraction help complex / long-horizon tasks as expected, only HopperHop / nav?** A subtlety
 worth stating plainly: our "complex" tasks (locomotion) are *dense-reward*, so the TD value pathway already does the
@@ -346,24 +386,65 @@ task grid crossing the two axes, with two probes — policy-only-vs-MPPI at matc
 removability) and PPO escape rate (exploration axis → predicts the wall) — showing the two splits are predicted by
 *independent* task properties. That turns a descriptive coincidence into a predictive law.
 
-**Q9 — The two directions, concisely:**
+**Q9 — The two directions, five bullets each (state → todo):**
 
-- **Direction 1 — the HopperHop / two-axis study.** Test whether "world-model removable ⇔ exploration-hard but
-  execution-simple" via policy-only-vs-MPPI + k-step rollout-error probes on a task grid. Cheap, reuses existing
-  harnesses, upgrades the dissection paper from descriptive to predictive.
-- **Direction 2 — JEPA + SE, correctly scoped.** *(a) Collapse:* is SE-community structure a better anti-collapse
-  than uniformity/VICReg **only where the latent truly collapses** (nav), and what actually triggers that collapse
-  (anchor-strength A/B, bet J0)? *(b) Hierarchy:* use SE community-detection to **define** H-JEPA temporal subgoals
-  on a long-horizon sparse task — the untested regime where abstraction *should* win (bet J2). *(c) Transfer:*
-  SE-structured JEPA for offline representation quality, where no dense value makes structure redundant (bet J3).
-- **The unifying frame:** structure can only help where the *value pathway isn't already doing the job* — so both
-  directions deliberately live *outside* dense value-based control: HopperHop probes *why* the world model is
-  dispensable there; JEPA+SE probes the goal-conditioned / long-horizon / offline regimes where structure still has
-  a pulse.
+*Direction 1 — the HopperHop / two-axis study* (upgrade Paper 4 from descriptive to predictive):
+- **State:** the removable/load-bearing split is established at n=8 (Hop removable; Walker/Cheetah/Acrobot −23/−38/−44%), but the *cause* is an unproven hypothesis (exploration-hard-but-execution-simple).
+- **Todo A — the decisive probe:** policy-only vs MPPI at matched weights, Hop vs the dense tasks — if Hop is π-learnable, policy-only reaches ~full return on Hop but falls short elsewhere. Reuses the FORCE_CK harness; ~1 box-day.
+- **Todo B — the rollout probe:** k-step open-loop latent rollout-error, stripped vs full, per task — expect stripped-Hop to stay accurate (periodic gait) while stripped-Walker's error explodes.
+- **Todo C — behavioral characterization:** measure action-sequence periodicity / control-precision of the optimal policy per task, to *predict* the split from task structure rather than from the ablation.
+- **Todo D — write it up:** a task grid crossing exploration × execution axes → the "two axes of task difficulty" paper section/proposal.
+
+*Direction 2 — JEPA + SE, correctly scoped* (structure where the value pathway isn't already doing the job):
+- **State:** we closed *anti-collapse-as-a-penalty* (regime-dependent — helps only where the latent truly collapses, i.e. nav) but never tested *SE-as-structure*; the nav-collapse *trigger* is unresolved.
+- **Todo J0 — collapse trigger (do first):** anchor-strength A/B — add a graded dense auxiliary target to the nav H-JEPA, crossed with online/offline; tests "dense value/state anchor prevents collapse." Tells us whether SE-structure even has a collapse to fix.
+- **Todo J1 — SE-community vs uniformity/VICReg** *in the collapse regime only:* matched head-to-head (none/unif/vicreg/SE, fixed-λ) on the tasks where the latent collapses. Finishes open cell #59; ~1 box-day.
+- **Todo J2 — SE *as* the hierarchy (the real novelty):** use min-2D-SE community detection to *define* H-JEPA temporal subgoals; the HL planner plans over community transitions on a long-horizon *sparse* task (AntMaze) — the untested regime where abstraction *should* win. Needs a build (~2–3 box-days); gated on J0/J1.
+- **Todo J3 — offline/transfer (parallelizable):** SE-structured JEPA vs plain/VICReg JEPA on frozen-encoder multi-task probes, where no dense value makes structure redundant — the regime JEPA is actually evaluated in.
+
+**The unifying frame:** structure can only help where the *value pathway isn't already doing the job* — so both
+directions deliberately live *outside* dense value-based control: HopperHop probes *why* the world model is
+dispensable there; JEPA+SE probes the goal-conditioned / long-horizon / offline regimes where structure still has a
+pulse.
 
 Sources for the JEPA landscape: [V-JEPA 2 (Meta AI)](https://ai.meta.com/research/publications/v-jepa-2-self-supervised-video-models-enable-understanding-prediction-and-planning/),
 [DINO-WM (arXiv 2411.04983)](https://arxiv.org/html/2411.04983v2),
 [V-JEPA (OpenReview)](https://openreview.net/forum?id=WFYbBOEOtv).
+
+## This week's TODO (from the Q&A)
+
+A consolidated, prioritized worklist distilled from everything above. Running items first, then the probes the Q&A
+surfaced.
+
+**In flight (no new work):**
+1. **Bet-3a bisimulation sweep** (value-conditioned abstraction) — CheetahRun, coef {0.1, 0.5} vs vanilla 855;
+   nan-smoke passed. Verdict at 5M: a beat → abstraction-SOTA forming; a null → the redundancy result extends from
+   *added* structure to *value-conditioned* structure.
+2. **Bet-3b value-sufficient bottleneck** — build + run *iff* bisim nulls (\\(z=[z_v,z_r]\\), Q/π read only
+   \\(z_v\\)).
+3. **URC-Walker clean 5M** — finishing on the slow box; harvest for the citable second-task number.
+
+**Direction 1 — HopperHop / two-axis (cheap, sharpens Paper 4), interleave between SOTA checkpoints:**
+4. **π-only vs MPPI at matched weights**, Hop vs Walker/Cheetah/Acrobot — the decisive removability probe (~1 box-day).
+5. **k-step rollout-error, stripped vs full**, per task — the mechanism behind the split.
+6. Draft the **"two axes of task difficulty"** section/proposal once 4–5 land.
+
+**Direction 2 — JEPA + SE (correctly scoped), start the cheap cells:**
+7. **J0 anchor-strength A/B** on nav H-JEPA (graded dense target × online/offline) — resolves the collapse trigger;
+   prerequisite for J2.
+8. **J1 SE-community vs uniformity/VICReg** in the collapse regime — finishes open cell #59 (~1 box-day).
+9. **J2 SE-as-hierarchy** build (min-2D-SE subgoals → HL planner on AntMaze) — *gated* on J0/J1 (~2–3 box-days).
+10. **J3 offline/transfer** SE-JEPA probe — parallelizable on a free box, no RL loop.
+
+**Lower priority (confirms rather than opens):**
+11. **Bet-B controlled taxonomy** — one prior family, vary DOF-overlap only, show the sample-efficiency multiplier
+    is monotone in overlap (turns scattered evidence into a citable predictive law).
+
+**Docs:** fold the five-loss primer, the two-axis hypothesis, and the reweighting-null into the papers; keep the
+Part 11 living index and `FUTURE_WORK_open_mechanisms.md` current.
+
+Sequencing rule: cheap probes (4, 5, 7, 8) interleave on whichever box frees first; builds (2, 9) are gated on the
+prior cell's result; nothing claims a win without a matched multi-seed beat.
 
 ## What's next
 

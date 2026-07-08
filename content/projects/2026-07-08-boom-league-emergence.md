@@ -1,7 +1,7 @@
 ---
 title: "What 217 Generations of Self-Play Look Like on a Game That Keeps Changing"
 date: 2026-07-08
-description: "An honest, hide-and-seek-style look at a generational self-play league on Boom, a Clash-Royale-like game. The anchor curves are noisy because the engine changed under the league; the clean signal is a transitivity gradient (champion beats gen-5 80%, gen-30 70%, gen-69 61%, gen-166 55%). Plus two findings we did not go looking for: occasional non-transitivity, and a large player-seat asymmetry that only seat-swapped evaluation reveals."
+description: "An honest, hide-and-seek-style look at a generational self-play league on Boom, a Clash-Royale-like game. The anchor curves are noisy because the engine changed under the league; the clean signal is a transitivity gradient (champion beats gen-5 80%, gen-30 70%, gen-69 61%, gen-166 55%). Includes the mistake I almost published: a 'player-2 advantage' that champion-vs-self mirror matches revealed to be a lopsided deck matchup (72-19), not a seat effect at all."
 layout: "post"
 showTableOfContents: true
 math: true
@@ -74,25 +74,54 @@ cleared at roughly 57%, and 55% over the immediately-prior champion is real
 but small. There is no capability explosion here — there is a ladder, climbed
 one careful rung at a time.
 
-Here is the champion closing out a match against its gen-5 ancestor (blue =
-champion, red = ancestor; it wins by razing the enemy king tower):
+## The mistake I almost published: "seat asymmetry"
 
-![Top-down animation of the champion defeating its gen-5 ancestor](/images/league/league_duel.gif)
+My first read of the head-to-head data was that the champion had a huge
+**player-2 advantage** — it won 94–100% of games as player 2 but only 28–59%
+as player 1 against the same ancestors. I wrote that down as a finding: Boom
+must have a big second-player edge. It was the wrong diagnosis, and catching it
+is the most useful thing in this post.
 
-## Two findings I did not go looking for
+The two seats **train with different decks.** Player 0 gets a 2.6-elixir
+*cycle* deck (fast, cheap, Hog-Rider-style); player 1 gets a 3.6-elixir
+*beatdown* deck (a Giant, a Wizard, heavier units). A full elixir point apart.
+So the "seat" I was measuring was really a *deck*.
+
+The clean way to separate the two is to play the champion against **itself** —
+identical policy, so any win-rate skew is 100% attributable to the decks:
+
+| deck setup | player 0 wins | player 1 wins |
+|---|---|---|
+| cycle (P0) vs beatdown (P1) | **19%** | **72%** |
+| mirror — both cycle | 38% | 41% |
+| mirror — both beatdown | 44% | 47% |
+
+There it is. The beatdown deck beats the cycle deck **72 to 19** in this
+engine; mirror matches are ~50/50 (the residual 3–5 point P0-under-P1 gap is
+the *real*, small first-player effect). There is no meaningful seat advantage.
+There is a lopsided card matchup, and every "seat asymmetry" number I had was
+just measuring which deck each seat happened to hold.
+
+Here is that imbalance in motion — the champion playing *itself*, cycle deck
+(blue) versus beatdown deck (red). Same brain on both sides; the red deck
+simply wins:
+
+![The beatdown deck defeating the cycle deck, same policy on both sides](/images/league/league_deck_imbalance.gif)
+
+The lesson is a boring, load-bearing one: **if your two seats aren't
+symmetric, you are benchmarking the asymmetry, not the agent.** The fix is to
+train and evaluate on *mirror* decks (both sides identical), which is the next
+change to the league. It is also a small balance verdict on the game itself —
+the default beatdown deck is over-tuned against the default cycle deck, and
+that wants fixing before either deck anchors a ladder.
+
+## One finding that survived
 
 **Non-transitivity is mostly absent — but not entirely.** In individual matches
 the champion occasionally *loses* to gen 5 (I caught one on the first seed I
 tried). Over 64 matches that washes out to a clean 80%, but the existence of
 rock-paper-scissors pockets is real, and it is a known reason self-play ladders
 can stall.
-
-**A large, consistent seat asymmetry.** The champion wins **94–100% as player
-2** but only **28–59% as player 1** against the same ancestors. The promotion
-gates are seat-swapped, so the ladder itself is fair — but the raw asymmetry
-says Boom has a substantial second-player advantage (or the league specialized
-to one seat), and it is big enough that any un-swapped evaluation would be
-badly misleading. I only saw it because I always swap seats.
 
 ## Why this is less dramatic than hide-and-seek — honestly
 
@@ -115,8 +144,10 @@ CI-verified improvement over the last.
   with no resets and kept producing verified champions (30 → 69 → 166 → 192).
 - **Trust transitivity over anchor curves** when the game is non-stationary; the
   anchors move, head-to-head does not.
-- **Always swap seats.** The 94%-vs-28% split would have turned any single-seat
-  number into fiction.
+- **Check your seats are symmetric before you trust any number.** I nearly
+  published a "second-player advantage" that was really a deck matchup;
+  champion-vs-self with mirror decks is what exposed it. Benchmark the agent,
+  not the asymmetry.
 - **Emergence needs an open-ended, stationary world.** A constrained,
   deliberately-shifting one gives you honest, incremental, hard-won gains
   instead — which is still exactly what you want from a competition ladder.

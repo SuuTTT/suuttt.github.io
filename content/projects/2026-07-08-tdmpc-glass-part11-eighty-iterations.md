@@ -130,6 +130,24 @@ consumes *by construction*, followed by a value-sufficient bottleneck if that nu
 a beat is the abstraction-SOTA we've chased for eighty iterations; a null is the definitive close of the redundancy
 question.
 
+## Two open mechanisms worth nailing (future work)
+
+Two "why" questions we brushed but never mechanistically closed — each has a partial answer and one decisive,
+un-run experiment (full write-up: `FUTURE_WORK_open_mechanisms.md`):
+
+- **Why is HopperHop unique?** It is simultaneously the *hardest* task for PPO (the sharpest categorical wall) and
+  the *only* task where the world-model loss is removable. The hypothesis — Hop is *exploration-hard but
+  execution-simple* (a low-dimensional limit-cycle gait the policy executes without accurate multi-step rollouts),
+  while Walker/Cheetah/Acrobot are *execution-precision-hard* (their return level needs the planner's rollouts) —
+  is stated but not tested. Decisive probe: policy-only vs MPPI at matched weights, Hop vs the dense tasks. Would
+  turn Paper 4's descriptive split into a *predictive* law.
+- **Why does the JEPA latent collapse in nav but not in control?** We showed closed-loop feedback *amplifies* it
+  and data-width doesn't cause it, but never isolated the trigger. Leading hypothesis: control latents are anchored
+  by a *dense TD value gradient* into the encoder; nav's goal-conditioning anchors weakly, so its rank collapses.
+  Decisive probe: vary anchor strength (add a graded dense auxiliary target to nav H-JEPA) crossed with
+  online/offline. Would yield the actionable rule "add anti-collapse only when the downstream signal is too sparse
+  to anchor latent rank."
+
 ## The law that survived eighty iterations
 
 > **In a value-based planner, structure and reweighting buy nothing the TD value pathway doesn't already consume.**

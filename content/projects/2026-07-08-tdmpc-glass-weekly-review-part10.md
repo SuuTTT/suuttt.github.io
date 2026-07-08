@@ -259,6 +259,112 @@ Decision rule: run J1 first (one box-day), gate the J2 build on its result, run 
 claim without a matched multi-seed win in a niche where structure isn't already redundant. Full design in
 `PLAN_jepa_se_sota.md`.
 
+## Discussion & Q&A (2026-07-08)
+
+A working session of nine questions that sharpened the above.
+
+**Q1 — For Bet A, the two tables just show planning gets *higher return*. How did we conclude that's exploitation,
+not exploration?** Because "higher return" and "more exploration" are different axes, and we measured the
+exploration axis directly. Exploration = discovering new states / finding the reward (measured by state coverage
+and reward-discovery step); exploitation = executing the found behavior for higher return. Two measurements
+separate them: **(a) coverage.** On WalkerRun, planning gets higher return yet *covers less* state late in training
+(distinct bins 464 vs 501, entropy 4.81 vs 4.86) — it concentrates onto the good manifold, the signature of
+exploitation, not exploration. **(b) discovery step.** On the decisive sparse task (CartpoleSwingupSparse), the
+exploration claim predicts planning finds the reward *first*; instead both find it 3/3 and **policy-only finds it
+earlier** (140k vs 157k). So the higher return (454 vs 239) is entirely *post-discovery* — planning exploits the
+found reward and stays stable while policy-only collapses late. Return↑ with coverage↓ and no discovery advantage =
+exploitation. The tables show planning wins; the *coverage + discovery-step* numbers show it wins by exploiting.
+
+**Q2 — What is "collapse" in JEPA, and how is it measured — is it R²?** Collapse is the trivial solution a
+self-predictive encoder can fall into: map every input to the *same* (or a very low-dimensional) latent, so
+"predict your own future latent" becomes trivially perfect (predict a constant) while the representation carries no
+information. We measure it two ways, and they can disagree: **(1) effective rank** of the latent covariance — how
+many dimensions the representation actually uses (healthy = high; collapsed → ~0–1; our nav latent hit ~1e-7); and
+**(2) frozen-encoder readout R²** — ridge-probe how well you can decode geometry (qpos) or value (return-to-go)
+from the frozen latent (collapsed = low R²). R² is *one* of the two. Crucially they diverge: uniformity *maximizes*
+eff-rank but *lowers* readout-R² — so eff-rank alone is a misleading collapse metric, and readout-R² (usable
+information) is the one that matters.
+
+**Q3 — What tasks do the JEPA variants actually benchmark on?** They are overwhelmingly *perception* benchmarks,
+not RL control:
+
+| Model | What it is | Benchmark tasks |
+|---|---|---|
+| I-JEPA | image SSL | ImageNet-1k linear-probe / low-shot, CIFAR, Places, iNaturalist |
+| V-JEPA | video SSL | Kinetics-400 (82.1%), Something-Something-v2 (71.2%), AVA, ImageNet |
+| V-JEPA 2 / 2-AC | video world model + action-conditioned | video understanding + **robot manipulation via visual MPC** from goal images (reach 100%, manipulation 60–80%; 62h robot data) |
+| DINO-WM | frozen DINOv2 features + latent dynamics | **zero-shot planning** via MPC/CEM: PointMaze (0.98), Push-T, Two-Room, Wall (0.96), Rope/Granular manipulation |
+
+The pattern is decisive for our scoping: JEPA's home is perception + *goal-conditioned* planning on manipulation/
+nav — **never dense-reward DMControl locomotion** (Cheetah/Walker/Hopper), which is exactly TD-MPC2's turf. That is
+*why* SE-on-TD-MPC2-control nulled, and why our JEPA+SE plan targets the goal-conditioned/transfer niche.
+
+**Q4 — What "task" is JEPA doing, and do recent works drive it with a classical planner?** JEPA is a
+*representation-learning objective* (predict a masked/future latent), not an RL algorithm — it yields an encoder.
+To act, you add something on top, and **yes: the recent control-JEPA works use a classical planner, not RL.**
+V-JEPA 2-AC and DINO-WM both learn a (frozen-encoder) latent dynamics model and plan with **MPC / CEM** over it;
+LeCun's H-JEPA vision is explicitly *planning* (energy-based inference), not reward-maximizing RL. They largely
+*avoid* the learned value/policy that TD-MPC2 relies on — which, given our finding that the value pathway is the
+engine, is precisely why they target goal-conditioned tasks (a goal-image distance substitutes for value) rather
+than dense-reward control.
+
+**Q5 — What RL does TD-MPC2 use — SAC, PPO, on- or off-policy?** **Off-policy**, replay-buffer, and *not* PPO or
+SAC — it's its own model-based method whose model-free core is a **TD actor-critic** (a TD-learned Q/value ensemble
++ a policy prior), closest in DNA to an off-policy deterministic-policy actor-critic (SAC-family), plus a learned
+world model and **MPPI planning** at deploy. So the contrast in our benchmark is three-way: PPO (on-policy) hits the
+wall, SAC (off-policy) partly clears it, TD-MPC2 (off-policy TD actor-critic + planning) clears it best — and our
+ablation shows the TD value + policy losses are the engine, consistent with "off-policy TD actor-critic."
+
+**Q6 — Why didn't abstraction help complex / long-horizon tasks as expected, only HopperHop / nav?** A subtlety
+worth stating plainly: our "complex" tasks (locomotion) are *dense-reward*, so the TD value pathway already does the
+credit assignment and extracts a value-sufficient latent → structure is redundant. The regime where abstraction /
+hierarchy *theory* predicts a win is **long-horizon AND sparse-reward AND no competent primitive** — where value
+credit alone can't bridge the horizon. We never cleanly tested that: our sparse tasks were short-horizon
+(Cartpole) or primitive-bottlenecked (PandaPickCube), and our long-horizon tasks were dense. So it isn't that
+abstraction *failed* on the regime it should help — it's that **we haven't tested that regime yet.** That gap is
+exactly what J2 (SE-hierarchy on a genuinely long-horizon sparse task like AntMaze) is for; it's the honest
+steel-man for continuing.
+
+**Q7 — What is J3, and why tie it to offline / transfer learning?** In *online* value-based RL the dense TD signal
+makes the representation value-sufficient, so structure is redundant — the wrong place to demonstrate that SE
+helps. In *offline / transfer* you learn the representation self-supervised on a fixed dataset with **no downstream
+reward pulling it**, then evaluate transfer (frozen-encoder linear probe across tasks). There, nothing preempts
+structure, so if SE's compact community geometry transfers better than plain/VICReg JEPA, that's a genuine win —
+*and* it matches where JEPA methods are actually evaluated (I-JEPA/V-JEPA on ImageNet/Kinetics transfer). J3
+relocates the SE claim to a regime our own redundancy result doesn't already close.
+
+**Q8 — HopperHop is simultaneously the sharpest PPO wall *and* the only removable cell. What's the hypothesis, and
+what paper/proposal?** The hypothesis is a **two-axis model of task difficulty**: an *exploration* axis (how hard to
+*find* the behavior) and an *execution* axis (how much precision/planning to *execute* it for high return).
+HopperHop is high-exploration (contact-critical → PPO wall) but low-execution (a low-dimensional limit-cycle gait
+the policy executes without accurate multi-step rollouts → world-model removable); Walker/Cheetah/Acrobot are
+high-execution (their return *level* needs the planner's rollouts → world-model load-bearing). **Formal claim:** the
+world-model loss is removable exactly on exploration-hard-but-execution-simple tasks, *orthogonally* to the wall,
+which lives on the exploration axis. **Paper:** "Two axes of task difficulty for model-based RL: exploration vs.
+execution, and what each demands of the world model" (or a sharp section in the dissection paper). **Proposal:** a
+task grid crossing the two axes, with two probes — policy-only-vs-MPPI at matched weights (execution axis → predicts
+removability) and PPO escape rate (exploration axis → predicts the wall) — showing the two splits are predicted by
+*independent* task properties. That turns a descriptive coincidence into a predictive law.
+
+**Q9 — The two directions, concisely:**
+
+- **Direction 1 — the HopperHop / two-axis study.** Test whether "world-model removable ⇔ exploration-hard but
+  execution-simple" via policy-only-vs-MPPI + k-step rollout-error probes on a task grid. Cheap, reuses existing
+  harnesses, upgrades the dissection paper from descriptive to predictive.
+- **Direction 2 — JEPA + SE, correctly scoped.** *(a) Collapse:* is SE-community structure a better anti-collapse
+  than uniformity/VICReg **only where the latent truly collapses** (nav), and what actually triggers that collapse
+  (anchor-strength A/B, bet J0)? *(b) Hierarchy:* use SE community-detection to **define** H-JEPA temporal subgoals
+  on a long-horizon sparse task — the untested regime where abstraction *should* win (bet J2). *(c) Transfer:*
+  SE-structured JEPA for offline representation quality, where no dense value makes structure redundant (bet J3).
+- **The unifying frame:** structure can only help where the *value pathway isn't already doing the job* — so both
+  directions deliberately live *outside* dense value-based control: HopperHop probes *why* the world model is
+  dispensable there; JEPA+SE probes the goal-conditioned / long-horizon / offline regimes where structure still has
+  a pulse.
+
+Sources for the JEPA landscape: [V-JEPA 2 (Meta AI)](https://ai.meta.com/research/publications/v-jepa-2-self-supervised-video-models-enable-understanding-prediction-and-planning/),
+[DINO-WM (arXiv 2411.04983)](https://arxiv.org/html/2411.04983v2),
+[V-JEPA (OpenReview)](https://openreview.net/forum?id=WFYbBOEOtv).
+
 ## What's next
 
 Two tracks, run without competing for the same claim. **(1) Value pathway:** the value-conditioned abstraction bet

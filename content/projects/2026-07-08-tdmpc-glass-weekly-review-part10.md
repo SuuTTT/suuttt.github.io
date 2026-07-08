@@ -232,11 +232,38 @@ load-bearing (on planner-led tasks) and near-optimal in form. The consistent mor
 structure and reweighting buy nothing the TD value pathway doesn't already consume.** That is a negative result with
 teeth — it's precisely why the three papers this week are a dissection, not a new method.
 
+## The JEPA line, reopened — a plan
+
+A fair objection: did we drop JEPA too early? The uniformity result looks like a flip — it *helped* the nav H-JEPA
+early, then *hurt* everywhere later. It isn't a flip; it's **regime-dependence**. Anti-collapse helps if and only
+if the latent actually collapses, which happened in exactly one place — closed-loop online goal-conditioned nav
+(eff-rank → ~0; anti-collapse restored it, point-maze 0.53 → 0.95). On broad DMControl a pure JEPA doesn't collapse
+(the predictor+EMA/BYOL asymmetry prevents it), so anti-collapse is redundant-to-harmful; on value-anchored TD-MPC2
+the TD loss already keeps the latent value-sufficient. So we closed **anti-collapse-as-a-penalty** — but we never
+tested **SE as *structure***: an SE-community partition that *defines* an abstraction, rather than an SE gradient
+that competes with the predictor.
+
+That is the open line, and it has a home — not dense value-based control (structure is provably redundant there),
+but the three niches where structure showed a pulse or where there's no value signal to hide behind:
+
+- **J1 — SE-community anti-collapse vs uniformity/VICReg, *in the collapse regime*** (cheap; finishes an open cell).
+  Does a compact SE community structure preserve goal-decodability better than uniformity where the latent really
+  collapses?
+- **J2 — SE *as* the H-JEPA abstraction** (the real novelty). Use min-2D-SE community detection to partition the
+  latent trajectory into **temporal subgoals**; the high-level planner plans over community transitions. This is
+  "SE as structure," which we never built — targeted at long-horizon tasks where flat TD-MPC2 is weak.
+- **J3 — SE-structured JEPA for offline/transfer** (paper-friendly). Frozen-encoder multi-task probes, no dense
+  value; does SE's community geometry transfer better than plain/VICReg JEPA?
+
+Decision rule: run J1 first (one box-day), gate the J2 build on its result, run J3 in parallel. No "JEPA+SE SOTA"
+claim without a matched multi-seed win in a niche where structure isn't already redundant. Full design in
+`PLAN_jepa_se_sota.md`.
+
 ## What's next
 
-The consistency lever (URC) finishes its head-to-head first. In parallel we're queuing the one direction that would
-genuinely test *abstraction* against our own nulls: a **value-conditioned** structure — forcing the abstraction into
-the value pathway, the single way our redundancy work said structure *could* matter but never did. If even that ties
-vanilla, the program's contribution crystallizes as "we tried, rigorously, to beat TD-MPC2's world-model design with
-abstraction and reweighting, and it is already near-optimal" — which, after a week like this one, would be an honest
-and useful thing to have proven.
+Two tracks, run without competing for the same claim. **(1) Value pathway:** the value-conditioned abstraction bet
+(bisimulation, running now) tests structure inside the value head on control tasks — the redundancy wall.
+**(2) Representation pathway:** the JEPA+SE plan above tests structure in the encoder on goal-conditioned /
+hierarchical / transfer tasks — where structure already showed a pulse. If both null, the program's thesis is
+airtight; if the SE-hierarchy (J2) wins, it is the abstraction-SOTA, correctly located *outside* the
+value-redundant regime. Either way it is an honest result, which after a week like this one is the point.

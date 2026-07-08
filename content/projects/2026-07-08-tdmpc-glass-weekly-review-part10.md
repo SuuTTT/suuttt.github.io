@@ -389,15 +389,37 @@ removability) and PPO escape rate (exploration axis → predicts the wall) — s
 **Q9 — The two directions, five bullets each (state → todo):**
 
 *Direction 1 — the HopperHop / two-axis study* (upgrade Paper 4 from descriptive to predictive):
-- **State:** the removable/load-bearing split is established at n=8 (Hop removable; Walker/Cheetah/Acrobot −23/−38/−44%), but the *cause* is an unproven hypothesis (exploration-hard-but-execution-simple).
+- **State (detailed):** we have a five-task sufficiency grid at n=4–12: training the consistency loss OFF from
+  scratch, HopperHop matches the full model (stripped 165/475/481/511 + 306/449/443/477 = n=8, 7/8 inside the
+  full band 420±113), while WalkerRun (−23%), CheetahRun (−38%) and AcrobotSwingup (−44%) all lose non-overlapping,
+  and CartpoleSwingupSparse both-fails. Independently, HopperHop is the sharpest PPO wall (0/5 ≥200 at 472M) and
+  the clearest env where TD-MPC2 beats *both* PPO and SAC. Those two facts sit in tension — the hardest env for
+  PPO is the one where TD-MPC2's world model is dispensable — and the *cause* is only a hypothesis
+  (exploration-hard-but-execution-simple), never mechanism-checked. This is exactly the tension the new Part 12
+  post dissects.
 - **Todo A — the decisive probe:** policy-only vs MPPI at matched weights, Hop vs the dense tasks — if Hop is π-learnable, policy-only reaches ~full return on Hop but falls short elsewhere. Reuses the FORCE_CK harness; ~1 box-day.
 - **Todo B — the rollout probe:** k-step open-loop latent rollout-error, stripped vs full, per task — expect stripped-Hop to stay accurate (periodic gait) while stripped-Walker's error explodes.
 - **Todo C — behavioral characterization:** measure action-sequence periodicity / control-precision of the optimal policy per task, to *predict* the split from task structure rather than from the ablation.
 - **Todo D — write it up:** a task grid crossing exploration × execution axes → the "two axes of task difficulty" paper section/proposal.
 
 *Direction 2 — JEPA + SE, correctly scoped* (structure where the value pathway isn't already doing the job):
-- **State:** we closed *anti-collapse-as-a-penalty* (regime-dependent — helps only where the latent truly collapses, i.e. nav) but never tested *SE-as-structure*; the nav-collapse *trigger* is unresolved.
-- **Todo J0 — collapse trigger (do first):** anchor-strength A/B — add a graded dense auxiliary target to the nav H-JEPA, crossed with online/offline; tests "dense value/state anchor prevents collapse." Tells us whether SE-structure even has a collapse to fix.
+- **State (detailed):** across the D-thread we showed a *pure* JEPA does **not** collapse on broad DMControl state
+  (none-arm readouts geom 0.795 / value 0.304, above raw-obs) or on pixels (30 runs), because the predictor+EMA
+  (BYOL) asymmetry already prevents it; adding uniformity/SE there *hurts* (0.795→0.583). Collapse (eff-rank → ~1e-7)
+  appeared in exactly one regime — the closed-loop online goal-conditioned nav H-JEPA — where anti-collapse helped
+  (point-maze 0.53→0.95). So we closed *anti-collapse-as-a-penalty* (regime-dependent) but never tested
+  *SE-as-structure*, and — a real gap — **we only ever benchmarked on our own DMControl/Panda tasks, never on the
+  perception/goal-conditioned tasks JEPA was actually designed and evaluated for.** The nav-collapse *trigger* is
+  also unresolved.
+- **Todo J-bench — evaluate on JEPA's home turf + find real collapse tasks (added):** run the SE-JEPA on the tasks
+  the JEPA literature uses (ImageNet/CIFAR-scale linear-probe for I-JEPA-style; PointMaze / PushT / goal-image
+  manipulation for the V-JEPA-2-AC / DINO-WM planning setup), and deliberately *hunt for more environments where the
+  latent genuinely collapses* (sparse goal-conditioned, narrow-data, closed-loop) — the only regime where any
+  anti-collapse or SE-structure can pay off. A fair test of SE must be on tasks JEPA is meant for, not on
+  dense-value control where every structure is redundant.
+- **Todo J0 — collapse trigger (do first):** anchor-strength A/B — add a graded dense auxiliary target to the nav
+  H-JEPA, crossed with online/offline; tests "dense value/state anchor prevents collapse." Tells us whether
+  SE-structure even has a collapse to fix.
 - **Todo J1 — SE-community vs uniformity/VICReg** *in the collapse regime only:* matched head-to-head (none/unif/vicreg/SE, fixed-λ) on the tasks where the latent collapses. Finishes open cell #59; ~1 box-day.
 - **Todo J2 — SE *as* the hierarchy (the real novelty):** use min-2D-SE community detection to *define* H-JEPA temporal subgoals; the HL planner plans over community transitions on a long-horizon *sparse* task (AntMaze) — the untested regime where abstraction *should* win. Needs a build (~2–3 box-days); gated on J0/J1.
 - **Todo J3 — offline/transfer (parallelizable):** SE-structured JEPA vs plain/VICReg JEPA on frozen-encoder multi-task probes, where no dense value makes structure redundant — the regime JEPA is actually evaluated in.

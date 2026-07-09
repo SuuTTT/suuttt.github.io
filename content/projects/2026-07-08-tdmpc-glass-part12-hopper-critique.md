@@ -109,8 +109,26 @@ Three experiments settle which hypothesis carries the Hopper win — all reuse e
    operator from world-model-fidelity.
 3. **Contact-stiffness sweep:** does the PPO wall (and TD-MPC2's margin) track contact-criticality, pinning H3?
 
-Until those run, the honest headline stands: **TD-MPC2's signature win is a TD-learning-and-planning win on a
-contact-critical exploration task; the world model it is named after is, on that very task, along for the ride.**
+## Update (2026-07-09): experiment 2 ran, and it confirms the critique
+
+We ran the decisive probe — **π-only (raw policy) vs MPPI, full-WM vs stripped-WM, on HopperHop at 5M** (n=2 each),
+logging both the planner return and the policy return at every eval:
+
+| arm | MPPI return | π-only return | does planning help? |
+|---|---|---|---|
+| **full world model** | **571** (554/587) | 542 (506/577) | **yes** — MPPI > π on both seeds |
+| **stripped world model** | 421 (386/455) | **448** (386/511) | **no** — π ≥ MPPI (tie, then 511 > 455) |
+
+The pattern is exactly what the critique predicts: **MPPI planning beats the raw policy only when the world model is
+present; strip the world model and planning stops adding value — the policy alone is as good or better.** So the
+planner's contribution on Hopper is *world-model-rollout-quality*, and since the world model is removable there
+(stripped ≈ 421–448, within the earlier removable-Hop band ~420 ± 113), **the win that survives is the TD value +
+policy, not planning-over-the-world-model.** (Honest caveat: the stripped-vs-full *absolute* gap is n = 2-noisy —
+this full pair drew high seeds; the robust signal is the *within-arm* MPPI-vs-π comparison, which is unambiguous.)
+
+Until the remaining probes (isolation vs SAC, contact-stiffness sweep) run, the honest headline stands: **TD-MPC2's
+signature win is a TD-learning-and-planning win on a contact-critical exploration task; the world model it is named
+after is, on that very task, along for the ride.**
 That is not a knock on TD-MPC2 — it is a correction of *why* it wins, and it sharpens where a better world model
 could actually matter (the dense/planner-led tasks, and the goal-conditioned/long-horizon regimes outside dense
 value-based control).

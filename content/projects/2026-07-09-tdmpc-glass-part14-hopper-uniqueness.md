@@ -67,11 +67,17 @@ tuned PPO on HopperHop under each, seed 50, 20M steps:
 
 The result is clean and mechanistically specific:
 
-- Under the **additive** reward, PPO **escapes the wall** (0 → 135, climbing) — because partial standing now pays,
-  giving the on-policy gradient something to climb.
+- Under the **additive** reward, PPO **climbs off zero with a steadily rising curve** (0 → 135 at 20M, not yet
+  plateaued: 3, 17, 29, 87, 92, 102, 77, 89, 113, 131, 94, 135) — because partial standing now pays, giving the
+  on-policy gradient something to climb. To be precise: 135 is still well below even the standing *component's*
+  ceiling (~500 under the additive scaling), so PPO has gained *learnable signal*, not solved the task — the
+  contrast with the product reward's flat 0 is the finding, not the absolute level.
 - Under the **product** reward, PPO stays **walled** — *and lowering the hop-speed threshold does not help* (0 → 1).
   So the barrier is the **conjunction itself** (near-zero return until both sub-tasks are solved together), **not**
   the hop-speed magnitude, **not** early termination (there is none), and **not** a fundamental PPO limitation.
+  (Technical footnote: `HOP_SPEED=1.0` also halves the tolerance *margin* — `margin = HOP_SPEED/2` — so this variant
+  is "easier threshold, narrower shaping band"; the flat result is consistent with the conjunction story either way,
+  but a margin-controlled variant would be the cleaner isolation for the paper version.)
 
 Off-policy TD + replay (SAC, TD-MPC2) tolerate exactly this conjunctive-sparse structure — they retain the rare
 joint-success transitions and bootstrap value across the cliffs — which is why they clear a wall that on-policy PPO

@@ -113,3 +113,23 @@ box flakiness. Critical path is **P2** (it answers Point 1).
   **P4** (WalkerRun full-vs-stripped, seeds 70/71 → pins the world-model removable/load-bearing margin) on b3060.
   Both 4 arms up, 0 nan at launch. Next: build the **P2** MPPI-disable flag; extend A1 to further seeds/tasks;
   begin the Paper A VSB section and the Paper 3 wall-mechanism section. *(This log is updated in place as runs land.)*
+- **2026-07-09 15:30** — GPU packing: b3060b doubled to **8 jobs** (added Walker VBN s51 alongside Cheetah s51,
+  2/GPU, mem-fraction 0.35), 100% util both boxes.
+- **2026-07-09 16:20 — CODE/EXP AUDIT (post-weekly review).** Four faults found and fixed:
+  **(F1, data-integrity)** the `run_arm.sh` jsonl tag lacked the *task* name (`wmabl_<ablate>_s<seed>`), so the
+  Walker two-axis (s62/63) appended into the *Hopper* s62/63 jsonl files — the ledgered Hop numbers were harvested
+  *before* contamination (benchmark CSVs, which are task-named, remain the durable source), but this explains the
+  garbage Walker π-vs-MPPI read, and a planned Cheetah batch on s70/71 would have corrupted the live Walker P4 data.
+  **Fixed:** tag now `wmabl_<TASK>_<ablate>_s<seed>` (backup `.bak_tagfix`).
+  **(F2, ops)** heredoc-through-compound-ssh silently failed twice — the Cheetah sufficiency batch *never launched*,
+  and the earlier status report mis-attributed the 4-proc count to "compute saturation" instead of a failed launch.
+  **Fixed:** printf-style drivers; Cheetah full-vs-stripped s70/71 now actually running (b3060 packed to 8 jobs,
+  task-qualified tags).
+  **(F3, claim precision)** Part 14's "PPO escapes the wall" overstated: the additive-reward curve climbs steadily
+  to 135 at 20M (not plateaued) but is well below even the standing component's ~500 ceiling — the finding is
+  *learnable signal vs flat zero*, not task-solved. Part 14 edited; `HOP_SPEED=1.0` margin-coupling footnoted
+  (margin = speed/2, so that variant is threshold+margin, not threshold-only).
+  **(F4, paper caveat)** VBN arms compare against van2 baselines run under earlier patch stacks; all env-gates
+  (VBN/VAC/URC) verified present and default-off (byte-identical when unset) — to be stated in the paper's setup.
+  Current fleet: b3060b 8 jobs (Cheetah+Walker VBN s51), b3060 8 jobs (Walker s70/71 + Cheetah s70/71
+  full-vs-stripped), 0 nan.

@@ -172,3 +172,17 @@ box flakiness. Critical path is **P2** (it answers Point 1).
   ~8M); custom SAC v1. Next: the **Lean+ decomposition** asks which TD-MPC2-side ingredient (UTD, Q-ensemble,
   SimNorm latent, noise anneal) carries the speed — and the **H3 margin-controlled PPO variant** (building now)
   closes the last reward-design caveat.
+- **2026-07-10 16:45 — reimplementation-validity audit (user-raised): V1 parity + V2 planner-collection test.**
+  The user asked the right question: our TD-MPC2 is a from-scratch JAX reimplementation that collects data with
+  π+noise, where canonical TD-MPC2 collects with the planner — *have we ever checked it against the original?*
+  **V1 (done):** we pulled the official per-task results from the TD-MPC2 repo. On hopper-hop our variant matches the
+  canonical level (official 449 mean, seeds 373–594 @4M vs ours ~420±113, mppi ~571) — and the official **SAC**
+  reference (0/246/105 @4M, 1/3 seeds ever ≥200) sits right on top of our custom SAC v1 (76/23/101), so the P1
+  "SAC fails on Hop" result is not an implementation artifact. Where our variant *is* weaker (Walker −17%,
+  Acrobot −23%, Cheetah −5%, Hop ≈0%), the deficit ordering tracks our measured WM-load-bearing ordering — exactly
+  what you'd predict if the missing planner-collection matters most where accurate rollouts matter. **V2 (running):**
+  an `MPPI_COLLECT=1` gate now runs {full, stripped} × planner-collection on HopperHop (n=2 each, 2.5M,
+  512 MPPI samples = the canonical count) — if the stripped model still trains to full *under planner-collection*,
+  the Part-12 removability claim holds beyond the implementation deviation; if it collapses, we rescope Part 12 to
+  policy-collection variants. Wording in Papers A/3 and Part 12 will say "our TD-MPC2 variant (policy-collection)"
+  until V2 lands.

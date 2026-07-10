@@ -161,3 +161,14 @@ box flakiness. Critical path is **P2** (it answers Point 1).
   is a custom v1 with target-entropy −0.5·|A| (half of canonical) — a **rescued-SAC arm** (α-floor 0.05,
   canonical −1.0·|A| target) is now running (n=3); if rescue works, the story is "entropy-collapse under conjunctive
   reward," a knob-level failure — not "SAC cannot hop." Either way it pins the mechanism.
+- **2026-07-10 14:20 — P1 COMPLETE: the entropy needle (Point 1 answered).** Three SAC arms (n=3 each, 5M, same
+  stack): auto-α *collapses* to ~0.003 and lands in the **stand-trap** (76/23/101 — SAC's best config, standing but
+  never hopping); a fixed α-floor of 0.05 (canonical target-entropy) lands in the **noise-trap** (≈0 — persistent
+  objective-stochasticity swamps the narrow contact-critical stability basin); a fixed 0.01 floor splits between the
+  two traps (1/0/51). **No entropy configuration threads HopperHop's conjunctive reward at 5M, while the planner-free
+  TD-MPC2 core crosses 200 by 1–2M (8/8).** The discriminating axis: SAC bakes stochasticity into the *objective*;
+  TD-MPC2 optimizes a *deterministic* actor objective against a Q-ensemble and injects exploration only into the
+  *data*. Scope stated honestly: this is a ≥4–8× sample-efficiency gap, not a capability wall (external SAC hops by
+  ~8M); custom SAC v1. Next: the **Lean+ decomposition** asks which TD-MPC2-side ingredient (UTD, Q-ensemble,
+  SimNorm latent, noise anneal) carries the speed — and the **H3 margin-controlled PPO variant** (building now)
+  closes the last reward-design caveat.

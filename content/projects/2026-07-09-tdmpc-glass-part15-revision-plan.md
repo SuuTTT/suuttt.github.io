@@ -133,3 +133,21 @@ box flakiness. Critical path is **P2** (it answers Point 1).
   (VBN/VAC/URC) verified present and default-off (byte-identical when unset) — to be stated in the paper's setup.
   Current fleet: b3060b 8 jobs (Cheetah+Walker VBN s51), b3060 8 jobs (Walker s70/71 + Cheetah s70/71
   full-vs-stripped), 0 nan.
+- **2026-07-10 04:15 — A1 Cheetah s51 done (marker-gated harvest).** True 5M finals **535/582/617/723** (the earlier
+  pre-completion read 594/572/636/742 is superseded — harvest-at-markers lesson re-learned). Corrected n=2 curve
+  **516/572/628/738 vs vanilla 855**: *strictly monotone*, the earlier "16/32 near-tie" was a mid-fluctuation
+  artifact. Cheetah VBN **s52 launched** on the freed GPUs (→ n=3).
+- **2026-07-10 08:50 — P4 harvest (+ a b3060 incident).** All 8 b3060 jobs were killed ~08:20 by a host-level event
+  (no reboot; ssh flapping). Walker died at 4.90M/5M, Cheetah at ~4.55M — harvested at last eval, truncation stated.
+  **Walker load-bearing margin, n=4: −7.5%** (full 708.2 vs stripped 654.9; ranges non-overlapping) — the historical
+  −23% is confirmed a seed/version outlier. **Cheetah (truncated, n=2): −19.2%** with wide seed spread (−28%/−9%);
+  needs full-5M seeds for a paper number.
+- **2026-07-10 08:55 — P2 pre-build discovery (changes the Point-1 experiment).** Reading the collection loop before
+  patching it: **our TD-MPC2 implementation already collects data with π+noise — MPPI never touches collection**;
+  the planner appears only in eval and in an optional MPC-distillation loss. So "MPPI as structured explorer" is
+  falsified *by construction* in our stack — every TD-MPC2 result we've reported (including the Hopper 6/6-by-1M win)
+  used policy-only collection. P2 is redefined: if the MPC-distill loss is default-on, ablate *it* (planning shaping
+  the policy via imitation); if default-off, the attribution falls to the off-policy TD core itself and **P1
+  (SAC-core isolation) becomes the decisive experiment**. Also a framing caveat for Part 12 / Paper 3: canonical
+  TD-MPC2 *does* collect with the planner; our deviation is itself evidence (planner-collection unnecessary on Hop)
+  but must be stated.

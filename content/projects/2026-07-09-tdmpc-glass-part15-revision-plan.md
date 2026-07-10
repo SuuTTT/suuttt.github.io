@@ -151,3 +151,13 @@ box flakiness. Critical path is **P2** (it answers Point 1).
   (SAC-core isolation) becomes the decisive experiment**. Also a framing caveat for Part 12 / Paper 3: canonical
   TD-MPC2 *does* collect with the planner; our deviation is itself evidence (planner-collection unnecessary on Hop)
   but must be stated.
+- **2026-07-10 10:45 — fleet incident, P1 leg 1, and the SAC-rescue arm.** (i) *Incident:* all jobs on both boxes
+  were killed ~08:00-08:30 (no reboot, no OOM record; external cause unknown; the box-local keep-busy cron that had
+  double-booked GPUs overnight is now disabled). Everything harvested-honest and relaunched: Walker+Cheetah VBN s52
+  on b3060b, Cheetah sufficiency s72/73 full-5M on b3060. (ii) **P1 leg 1 (SAC baseline, n=3 @5M): SAC-default never
+  reaches 200 on HopperHop** (76/23/101) — its auto-tuned entropy coefficient collapses to ~0.003 and the agent
+  stands forever; stripped-TD-MPC2 on the same stack is 8/8 ≥200. With the planner-free-training discovery, the
+  attribution sharpens to: **the TD value/actor core itself is the edge.** (iii) *Honesty check in flight:* our SAC
+  is a custom v1 with target-entropy −0.5·|A| (half of canonical) — a **rescued-SAC arm** (α-floor 0.05,
+  canonical −1.0·|A| target) is now running (n=3); if rescue works, the story is "entropy-collapse under conjunctive
+  reward," a knob-level failure — not "SAC cannot hop." Either way it pins the mechanism.

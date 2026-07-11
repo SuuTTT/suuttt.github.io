@@ -117,3 +117,22 @@ strongest evidence yet for the execution-simple account: on Hop, what the planne
 scoring, not rollout fidelity. The papers can now state the removability result as holding under **both**
 policy-collection (n=8) and planner-collection (n=2). The natural reviewer follow-up — the same planner-collection
 contrast on WalkerRun, where the world model *is* load-bearing — is queued.
+
+## Update 2 (2026-07-11): the Walker mirror-image — a complete double dissociation
+
+The pre-registered follow-up ran: the same planner-collection gate on **WalkerRun**, where the world model is
+load-bearing. Prediction: the stripped model should *degrade* there. Result (2.5M, n=2/arm):
+
+| task | full + planner-collection | stripped + planner-collection | Δ |
+|---|---|---|---|
+| HopperHop | 465.0 | 465.8 | +0.2% — removable |
+| **WalkerRun** | **721.9** (758/686) | **605.4** (601/610) | **−16.1%** — non-overlapping |
+
+Confirmed, cleanly. Two further reads: the planner-collection gap on Walker (−16% at 2.5M) is *larger* than the
+policy-collection gap (−7.5% at 5M) — planner-collection **amplifies** the world model's importance exactly where
+rollout quality matters, because the planner collects by rolling the model. And the full model under
+planner-collection reaches at 2.5M what policy-collection needs 5M for (~722 vs the 708–727 band) —
+planner-collection roughly **doubles Walker sample-efficiency** in our stack, which retroactively explains the
+V1 deficit pattern (official, planner-collecting TD-MPC2 beats our policy-collecting variant precisely on the
+load-bearing tasks). Together, V2 + V2W form the cleanest mechanistic statement of the program: **the world model's
+value is task-conditional, and collection mode modulates it in the predicted direction at both ends.**

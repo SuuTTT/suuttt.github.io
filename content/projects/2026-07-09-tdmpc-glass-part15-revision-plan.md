@@ -198,3 +198,15 @@ box flakiness. Critical path is **P2** (it answers Point 1).
   vs 855 (strictly monotone per seed); Walker VBN n=3 622/647/669/701 vs 727 (most-compressible signature). In
   flight: **V2W** (Walker planner-collection contrast — pre-registered: stripped should degrade where the WM is
   load-bearing; ~noon) and **Acrobot VBN s52** (→ n=3 on the least-compressible task).
+- **2026-07-11 18:15 — day-2 batch: the dissociation confirmed, the grid completed, the next bet designed.**
+  (i) **V2W confirmed the pre-registered prediction**: under planner-collection the stripped model degrades on
+  WalkerRun (−16.1%, 722 vs 605, non-overlapping) — the mirror image of Hop's ±0%. The collection-mode ×
+  world-model **double dissociation is complete**, and planner-collection turns out to roughly *double* Walker
+  sample-efficiency (722 @2.5M ≈ policy-collection @5M), retroactively explaining the V1 official-vs-ours deficits.
+  (ii) **V2X** (seed-52 extension of the dissociation table to n=3) runs overnight. (iii) **The 3-task
+  value-sufficiency grid is n=3 complete**: Cheetah 517/576/624/726 vs 855 (smooth-monotone), Walker
+  622/647/669/701 vs 727 (flat-high — most compressible), Acrobot 258/267/271/428 vs 511 (step-at-128 — least
+  compressible; tight-width ordering is seed noise, s53 → n=4 tonight). Paper A's positive-instrument figure is
+  data-complete. (iv) **Lean+ designed and pre-registered** (ledger 0af60bf): not another robust-loss bet — our
+  value loss is already two-hot CE — but *target-EMA smoothing as a replacement for the world model's anchoring
+  role*, tested on the stripped model's seed-fragile Cheetah; kill numbers stated; builds when V2X frees the box.

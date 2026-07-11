@@ -186,3 +186,15 @@ box flakiness. Critical path is **P2** (it answers Point 1).
   the Part-12 removability claim holds beyond the implementation deviation; if it collapses, we rescope Part 12 to
   policy-collection variants. Wording in Papers A/3 and Part 12 will say "our TD-MPC2 variant (policy-collection)"
   until V2 lands.
+- **2026-07-11 06:30 — overnight batch: the campaign's crux results all landed.**
+  (i) **P1 closed** — full SAC entropy grid (auto-α / 0.01 / 0.05, n=3 each) fails on Hop at 5M while the planner-free
+  TD core is 8/8; validated externally (official SAC reference matches ours). (ii) **H3 margin-controlled variant**:
+  PPO still walls (2.8/3.6 @20M) with the shaping margin held — the conjunction is the wall, de-confounded. (iii)
+  **Reimplementation audit published** (Parts 16–17: validity audit + the Handbook). (iv) **V2 — the scoping verdict:
+  Hop removability SURVIVES canonical-style planner-collection** (full 465.0 vs stripped 465.8 @2.5M, n=2) — Part-12's
+  critique holds beyond the deviation; the stripped arm planning over an untrained dynamics net is the strongest
+  execution-simple evidence yet. (v) **Sufficiency + VSB tables reach paper grade**: Cheetah suff n=4 −23.8%; task
+  ordering Hop 0 (n=8) < Walker −7.5% (n=4) < Cheetah −23.8% (n=4) < Acrobot −44%; Cheetah VBN n=3 517/576/624/726
+  vs 855 (strictly monotone per seed); Walker VBN n=3 622/647/669/701 vs 727 (most-compressible signature). In
+  flight: **V2W** (Walker planner-collection contrast — pre-registered: stripped should degrade where the WM is
+  load-bearing; ~noon) and **Acrobot VBN s52** (→ n=3 on the least-compressible task).

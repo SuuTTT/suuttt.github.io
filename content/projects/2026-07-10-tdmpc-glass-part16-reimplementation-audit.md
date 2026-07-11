@@ -98,3 +98,22 @@ lands within a day and will be appended here.
 
 *The lesson, stated plainly: when your research program runs on a reimplementation, the parity audit is not optional
 due diligence — it is an experiment, and (as here) it can return results.*
+
+## Update (2026-07-11): the V2 verdict — removability survives planner-collection
+
+The experiment landed, and the answer is unambiguous. With the `MPPI_COLLECT=1` gate making our stack collect data
+canonical-style (the planner acts during environment interaction, 512 samples):
+
+| arm (HopperHop, 2.5M, n=2) | seed 50 | seed 51 | mean |
+|---|---|---|---|
+| full world model + planner-collection | 467.8 | 462.2 | **465.0** |
+| **consistency-stripped** + planner-collection | 451.8 | 479.8 | **465.8** |
+
+**Stripped equals full to within noise (+0.2%).** The consistency loss is removable on HopperHop even when the
+planner collects the data — including in the stripped arm, where MPPI is rolling an *untrained* dynamics network and
+scoring candidate actions purely through the reward and value heads. That is simultaneously (a) the discharge of the
+one claim this audit put at risk — Part 12's critique holds beyond the implementation deviation, and (b) the
+strongest evidence yet for the execution-simple account: on Hop, what the planner contributes is value-guided action
+scoring, not rollout fidelity. The papers can now state the removability result as holding under **both**
+policy-collection (n=8) and planner-collection (n=2). The natural reviewer follow-up — the same planner-collection
+contrast on WalkerRun, where the world model *is* load-bearing — is queued.

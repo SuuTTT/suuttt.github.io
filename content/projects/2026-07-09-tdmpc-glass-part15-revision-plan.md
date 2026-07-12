@@ -210,3 +210,13 @@ box flakiness. Critical path is **P2** (it answers Point 1).
   data-complete. (iv) **Lean+ designed and pre-registered** (ledger 0af60bf): not another robust-loss bet — our
   value loss is already two-hot CE — but *target-EMA smoothing as a replacement for the world model's anchoring
   role*, tested on the stripped model's seed-fragile Cheetah; kill numbers stated; builds when V2X frees the box.
+- **2026-07-12 04:30 — overnight batch: V2X softens the Walker claim honestly; Acrobot VBN reaches n=4.**
+  (i) **V2X (dissociation at n=3)**: Hop's stripped≈full is rock-solid (+1.4%, three tight seeds), but Walker's
+  s52 *full* arm collapsed to 455 (vs 758/686 on s50/51) while the stripped arms stayed tight (601/610/600) —
+  the full-model arm is bimodal under planner-collection. On medians the dissociation stands (−12.5% Walker vs
+  ≈0 Hop); we softened the claim to median-based and launched a seed-53 resolving pair rather than over-claiming.
+  (ii) **Acrobot VBN n=4**: 261/271/282/397 vs vanilla 511 — the step-at-128 persists but narrows (84%→78%),
+  and s53 is the second consecutive seed where D=128 is not dominant (304 ≈ D=64's 316). Updated claim: tight
+  widths flat at 51–55%; D=128 alone recovers a large fraction, with wide seed variance on the step size.
+  (iii) In flight: **Lean+** (target-EMA-as-WM-anchor on stripped Cheetah, 6 arms, verdict ~evening), the V2W
+  seed-53 resolving pair (~morning), and Cheetah/Walker VBN seed-53 (→ n=4 on all three tasks).

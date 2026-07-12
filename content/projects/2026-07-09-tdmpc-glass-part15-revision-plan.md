@@ -220,3 +220,14 @@ box flakiness. Critical path is **P2** (it answers Point 1).
   widths flat at 51–55%; D=128 alone recovers a large fraction, with wide seed variance on the step size.
   (iii) In flight: **Lean+** (target-EMA-as-WM-anchor on stripped Cheetah, 6 arms, verdict ~evening), the V2W
   seed-53 resolving pair (~morning), and Cheetah/Walker VBN seed-53 (→ n=4 on all three tasks).
+- **2026-07-12 12:40 — midday batch: the dissociation resolves at n=4, and Lean+ returns an informative null.**
+  (i) **V2W seed-53 settled the Walker question** (ledger 377e319, Part-16 update 3): full 744.7 vs stripped 558.3 —
+  3 of 4 full seeds cluster 686–758, and live eval-trajectory watching revealed the real phenomenon: the full arm's
+  evals swing ~250 points within a run while the stripped arm's move ~30. The dissociation is confirmed at n=4
+  (medians 715.5 vs 600.5, −15.4%) with a variance-aware framing: the WM buys a higher but noisier performance
+  regime on Walker. (ii) **Lean+ verdict — null, as pre-registered kill criteria demanded honesty**: target-EMA
+  smoothing on the stripped model (596.9, n=3) does not beat the control (607.1) and misses the ≥620 gate; it does
+  halve seed variance. Conclusion: the world model's dense-task contribution is predictive structure, not mere
+  target stabilization — the lightweight-TD-MPC2 recipe stays "strip only where removable." (iii) **Refills**:
+  V2W s54 (Walker n=5), V2H s53 (Hop n=4), and V2C s50/51 (Cheetah joins the dissociation table; pre-registered
+  prediction: stripped degrades ≥15% under planner-collection, kill if <8%). All 8 GPUs busy.

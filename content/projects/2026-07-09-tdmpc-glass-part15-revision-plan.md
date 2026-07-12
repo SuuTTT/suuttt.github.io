@@ -231,3 +231,13 @@ box flakiness. Critical path is **P2** (it answers Point 1).
   target stabilization — the lightweight-TD-MPC2 recipe stays "strip only where removable." (iii) **Refills**:
   V2W s54 (Walker n=5), V2H s53 (Hop n=4), and V2C s50/51 (Cheetah joins the dissociation table; pre-registered
   prediction: stripped degrades ≥15% under planner-collection, kill if <8%). All 8 GPUs busy.
+- **2026-07-12 22:30 — THE VSB GRID IS n=4 COMPLETE. Paper A's central figure is data-final.** Walker seed-53
+  landed on the curve (610.7/618.2/648.9/674.9), closing the third task. The figure at n=4: **Cheetah**
+  544/588/630/727 vs 855 (64→85%, strictly monotone — a smooth information gradient where every doubling of the
+  value-bottleneck width buys more); **Walker** 619/640/664/694 vs 727 (85→96%, flat-high — the most compressible
+  task, D=16 already retains 85%); **Acrobot** 261/271/282/397 vs 511 (51→78%, tight widths flat, only D=128
+  recovers substantially — the least compressible). Three qualitatively distinct fingerprints, ordered exactly like
+  the sufficiency table (Walker −7.5% < Cheetah −23.8% < Acrobot −44%) — the instrument and the ablation agree.
+  Also today: the GWM line was reviewed pre-box-retirement and stays closed (Part-18 lab notebook, with the one
+  banked SOLD-Distinct follow-up). In flight overnight: n=5 seeds on all Cheetah and Walker widths; the V2W s54
+  (Walker dissociation n=5), V2H s53 (Hop n=4), and pre-registered V2C Cheetah planner-collection pairs on b3060.

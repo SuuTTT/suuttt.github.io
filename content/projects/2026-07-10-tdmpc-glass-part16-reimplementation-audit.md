@@ -136,3 +136,15 @@ planner-collection roughly **doubles Walker sample-efficiency** in our stack, wh
 V1 deficit pattern (official, planner-collecting TD-MPC2 beats our policy-collecting variant precisely on the
 load-bearing tasks). Together, V2 + V2W form the cleanest mechanistic statement of the program: **the world model's
 value is task-conditional, and collection mode modulates it in the predicted direction at both ends.**
+
+**Update 3 (07-12) — the n=4 resolution, and what the "bimodality" really was.** Seed 52 briefly complicated the
+story: its full arm finished at 455, far below s50/51 (758/686), while its stripped arms stayed tight — raising the
+possibility that the full model under planner-collection is bimodal across seeds. The seed-53 resolving pair settled
+it: full **744.7**, stripped **558.3** (finals at 2.5M), so 3 of 4 full seeds cluster at 686–758 and s52 is the lone
+outlier. Better, watching s53's eval trajectory live revealed the mechanism: the full arm's evals swing ~250 points
+within a single late-training window (680 → 715 → 676 → **501** → 696 → 744 over 2.1–2.5M) while the stripped arm
+moves ~30 points (539–568). The dissociation at n=4: full median **715.5** vs stripped **600.5** (−15.4%; means
+−10.4%). So the refined claim is variance-aware: on WalkerRun under planner-collection, the world model buys a
+higher-performance but higher-variance eval regime, and the stripped model trades ~115 points of median for
+stability. s52's 455 was almost certainly an unlucky final-eval draw from the volatile regime, not a distinct mode.
+Hop's ±0 (n=3, tight) stands unchanged — the double dissociation is now n=4 on the Walker side.

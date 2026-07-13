@@ -148,3 +148,15 @@ moves ~30 points (539–568). The dissociation at n=4: full median **715.5** vs 
 higher-performance but higher-variance eval regime, and the stripped model trades ~115 points of median for
 stability. s52's 455 was almost certainly an unlucky final-eval draw from the volatile regime, not a distinct mode.
 Hop's ±0 (n=3, tight) stands unchanged — the double dissociation is now n=4 on the Walker side.
+
+**Update 4 (07-13) — the third task inverts the story, exactly as a pre-registration should catch.** With Hop and
+Walker in hand we pre-registered the natural generalization: planner-collection amplifies the world model's
+importance, so stripped-Cheetah should degrade ≥15% (kill: <8%). It did neither — it **inverted**. Across both
+seeds the full model's evals destabilize under planner-collection (swinging 141–585 within the last 250k steps)
+while the stripped model holds a tight ~460–555 band; on last-6-eval medians the stripped model is ~40% *above*
+full. Walker meanwhile strengthened to n=5 (full median 739 vs stripped 601, −18.7%), and Hop stayed removable at
+n=4 (436 vs 468). The three-task table is now: **removable (Hop) / load-bearing-but-volatile (Walker) /
+actively destabilizing (Cheetah)** — the collection-mode × world-model interaction is task-dependent and
+non-monotone in how much the value function needs the latent (the VSB grid's ordering). That is a sharper claim
+than "amplification," and it is what the planner-rolls-the-model mechanism actually predicts once the model's
+rollout errors compound differently per dynamics class. Cheetah n=5 pairs are running to nail the inversion.

@@ -131,8 +131,14 @@ against a matched vanilla baseline.
 
 Uniformity ≈ VICReg, both *below* vanilla — a null, and the *expected* null under H-COMPRESS: TD-MPC2's
 latent is already shaped by the value/TD objective, which prevents the collapse these regularizers exist
-to fight. (A boundary test is now **running** on WalkerRun — the *most*-compressible regime, where
-anti-collapse has the most room to help; if it's null there too, H-COMPRESS is airtight.)
+to fight.
+
+> **Update (07-15, live).** A third Cheetah seed finished, taking this to **n=3**: uniformity **739**
+> (−10%), VICReg **779** (−5%), still both below vanilla (~818) — the null holds. The **WalkerRun**
+> boundary test (the *most*-compressible regime, where anti-collapse has the most room to help) is
+> running now across a rented 4×4070 plus the freed 3060 box; at the interim ~2M/5M checkpoint all three
+> arms are clustered ~695–724 with **no separation yet** — early-consistent with the null. If it stays
+> null through 5M, H-COMPRESS is airtight across both VBN-fingerprint extremes. Final numbers next update.
 
 **But there is a caveat I want to state plainly, because it is the most interesting gap.** "Anti-collapse
 regularizer" and "consistency loss" are only two points on the abstraction axis. They are *not* the

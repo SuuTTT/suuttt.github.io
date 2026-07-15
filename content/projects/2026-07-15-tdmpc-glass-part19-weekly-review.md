@@ -22,24 +22,63 @@ tags: ["world-models", "TD-MPC2", "PPO", "abstraction", "JEPA", "VICReg", "mujoc
 
 ## The four hypotheses this program is testing
 
-To keep the rest of this post unambiguous, here are the hypotheses by name. Later sections say which
-each one supports or dents.
+First, two terms the whole program turns on:
 
-- **H-COMPRESS (value-information compressibility).** Explicit structure helps a value-based agent only
-  where the *value function needs little of the latent*. The quantity that predicts "is there room to
-  help" is how compressible the value-relevant information is — not horizon length, not task family.
-- **H-WM-ABSTRACT (the world model *is* a learned abstraction).** The consistency loss that trains the
-  latent dynamics builds a task-relevant compression of the observation — i.e. a *learned* abstraction.
-  So "abstraction" and "world model" are not two separate things; the world model is one point on the
-  abstraction axis, and both should be ablated on the same footing.
-- **H-COLLECT (collection mode gates the world model's value).** How load-bearing the world model is
-  depends on whether data is collected by the *policy* or by the *planner* (MPPI rolling the model to
-  act). Planner-collection can make the model matter *more* — or, if it is inaccurate, actively *harm*.
-- **H-VARIANCE (one mechanism, two regimes).** Under planner-collection the world model's net effect is
-  a **variance inflation** of the planner's targets; whether that variance is net-positive or net-harmful
-  is set by the mean/variance ratio of the resulting returns.
+- **The base objective** is what TD-MPC2 already optimizes *without any of our additions*: a **value/TD**
+  loss (predict discounted return) plus a latent-**dynamics** ("consistency") loss (predict the next
+  latent), with the MPPI planner choosing actions by rolling that latent model forward. The
+  representation — the **latent** — is simply whatever vector the network learns in order to satisfy
+  those losses.
+- **Explicit structure** = any *hand-designed representational objective we bolt on top* of the base
+  objective. Concretely, the menu is: the consistency loss (treated as an ablatable knob), an
+  **anti-collapse penalty** (uniformity, VICReg), **SimNorm**, a **structural-entropy / "glass"** latent,
+  **clustering / discretization**, or a **behavioral** prior (TAMP, skill-options). The single question
+  behind this program is: *when does adding explicit structure beat just letting the base objective shape
+  the latent on its own?*
 
-Three of these got sharp evidence this week; H-WM-ABSTRACT is the one I'm now building experiments
+With those fixed, the four hypotheses:
+
+- **H-COMPRESS (value-information compressibility).**
+  *Claim:* adding explicit structure helps **only** on tasks where the **value head needs just a small
+  slice of the latent** to predict returns well.
+  *Intuition:* if the value/TD objective already spends the *entire* latent computing value, the
+  representation is "full" — there is no spare capacity for an added objective to reorganize, so structure
+  can't help. If the value head needs only a *little* of the latent, the rest is effectively free, and an
+  added objective has room to shape it usefully.
+  *How we measure "how much of the latent the value head needs":* the value-sufficiency bottleneck (VBN)
+  — force the value head's input through a width-\(D\) bottleneck and sweep \(D\in\{16,32,64,128\}\). If
+  return barely drops at small \(D\), the value-relevant information is highly **compressible** (the head
+  needs little → *room to help*). If return falls off smoothly as \(D\) shrinks, the head needs the whole
+  latent (*no room*).
+  *The punchline:* the thing that predicts "is there room to help" is this **compressibility**, **not**
+  the two quantities you'd naively guess — the task's planning **horizon length**, or its **family**
+  (locomotion vs manipulation). Two locomotion tasks (Walker, Cheetah) land at opposite ends of the
+  compressibility axis; that is why family and horizon fail as predictors and compressibility succeeds.
+
+- **H-WM-ABSTRACT (the world model *is* a learned abstraction).**
+  *Claim:* the latent-dynamics model the consistency loss trains is itself an abstraction — a **learned**,
+  task-relevant compression of the observation. So "world model" and "abstraction" are not two different
+  things to compare; the world model is one *kind* of abstraction (learned), on the same axis as the
+  **imposed** ones (SE / SimNorm / glass).
+  *Consequence:* "stripped vs full" (deleting the consistency loss) is *already* an abstraction ablation —
+  of the *learned* abstraction — and the clean experiment is to ablate a learned and an imposed
+  abstraction *together*, per task, to see which piece is the working part.
+
+- **H-COLLECT (collection mode gates the world model's value).**
+  *Claim:* how much the world model matters depends on **who collects the data** — the reactive **policy**
+  (our default) or the **planner** (canonical TD-MPC2: MPPI rolls the model forward to *act*).
+  *Why it could matter:* under planner-collection the model doesn't merely *score* candidate actions, it
+  *generates the behaviour that becomes the next batch of training data* — so an inaccurate model can
+  steer its own data collection, feeding its errors back in.
+
+- **H-VARIANCE (one mechanism, two regimes).**
+  *Claim:* under planner-collection, the net effect of the world model is to **inflate the variance** of
+  the returns the planner chases (~3× in our runs). Whether that extra variance is *good* or *bad* is set
+  by the **ratio of the mean return to that variance**: a high mean keeps the swings net-positive
+  (Walker); a low mean lets the swings drag returns *below* a stable no-model baseline, so the model turns
+  net-harmful (Cheetah — the inversion). One mechanism, opposite signs.
+
+Three of these got sharp evidence this week; **H-WM-ABSTRACT** is the one I'm now building experiments
 around (see *What's queued*).
 
 ## Instrument 1 — the value-sufficiency bottleneck (evidence for H-COMPRESS)

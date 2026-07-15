@@ -83,8 +83,23 @@ With those fixed, the four hypotheses:
   (Walker); a low mean lets the swings drag returns *below* a stable no-model baseline, so the model turns
   net-harmful (Cheetah — the inversion). One mechanism, opposite signs.
 
-Three of these got sharp evidence this week; **H-WM-ABSTRACT** is the one I'm now building experiments
-around (see *What's queued*).
+**Are these hypotheses actually *useful*, or just relabeling?** Fair question — they are not equally
+load-bearing:
+
+- **H-VARIANCE** is the most useful: it made a concrete, measured prediction (the world model inflates
+  planner-target variance ~3×, sign set by mean/variance ratio) that you can *compute per task from eval
+  traces* to forecast whether planner-collection will help or hurt — a decision procedure, not a label.
+- **H-COMPRESS** is useful as a **cheap screen**: run the VBN before spending compute on structure, and
+  skip tasks where the value head needs the whole latent. Its *negative* (redundancy) side is well
+  supported; its *positive* side ("structure helps in flat-high") is unproven and under test.
+- **H-COLLECT** is a real, testable factor (collection mode), but see the confound caveat in Instrument 2
+  — we have not yet run the clean factorial that would let us *attribute* an effect to it.
+- **H-WM-ABSTRACT** is, honestly, mostly a **reframing** right now. Its only cash value is that it makes
+  one experiment well-posed — the cross-ablation (ablate learned *and* imposed abstraction together). If
+  that experiment's outcomes don't come apart, the hypothesis is just a relabeling and should be dropped.
+
+That triage is itself the point of naming them: a hypothesis earns its keep only when it changes what we
+*do* next.
 
 ## Instrument 1 — the value-sufficiency bottleneck (evidence for H-COMPRESS)
 
@@ -172,11 +187,31 @@ So the two headline conclusions — **(a)** the world model's value is task-depe
 collection is (mostly) a sample-efficiency operator — now have a shared mechanism underneath (a), not
 just an observation: it is the variance-inflation of H-VARIANCE, with the sign flip explained.
 
+> **Confound caveat — this is not yet a clean factorial (a reader raised this, correctly).** Three
+> binary factors are in play here: **collection mode** (policy vs planner), **implementation** (our JAX
+> reimplementation vs official TD-MPC2), and the **world model** (stripped vs full). The dissociation
+> above cleanly varies only the third *within our reimplementation under planner-collection*; it does
+> **not** cross implementation, and the effect sizes live on top of a ~3× variance (H-VARIANCE), so "the
+> world model is *harmful* on Cheetah" is a median claim at n=9, not a variance-controlled attribution.
+> Before that word "harm" is load-bearing in a paper we need the **2×2×2 controlled factorial**
+> (collection × implementation × world-model), matched seeds, with the variance explicitly modeled — and
+> the official-vs-ours cell ties directly to the parity test we have *not* run. Queued (issues #2, #7).
+
 ## Instrument 3 — the anti-collapse line, and a sharper question (H-WM-ABSTRACT)
 
 The anti-collapse (JEPA/SE) bets were parked since Part 7. This week I ran the two canonical levers on
 the task the VBN instrument flags as *least compressible* (CheetahRun): **uniformity** vs **VICReg**
 against a matched vanilla baseline.
+
+> **What this actually is — not a JEPA (a reader flagged the naming).** The `urc`/`vac` arms are
+> literally `uniformity_loss()` and `vicreg_loss()` **added as an auxiliary term to TD-MPC2's existing
+> latent** (`tdmpc2.py`); with the coefficient at zero they reduce to vanilla. So this bounds *"do
+> anti-collapse penalties help a value-based world model?"* — it is **not** a test of the JEPA
+> *architecture* (a separate predictor over a decoder-free, EMA-target embedding). Plain JEPA/H-JEPA was
+> never designed for DMControl value-control, and our earlier faithful H-JEPA runs (Panda, #55–58) nulled
+> for a different reason (the low-level primitive). A proper "does a JEPA world model help on DMControl"
+> test would adapt a modern JEPA-style controller — e.g. **DINO-WM** — rather than a penalty on TD-MPC2.
+> Queued (issue #8). Until then I'll call this the **anti-collapse-regularizer** result, not "JEPA."
 
 ![JEPA #59 null on Cheetah](/images/part19-jepa59-null.png)
 

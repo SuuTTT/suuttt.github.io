@@ -1,7 +1,7 @@
 ---
 title: "TD-MPC-Glass, Part 19: A Week in Review — Turning Three Dissections Into Instruments"
 date: 2026-07-15
-description: "The week of July 8–15, reviewed end to end. Last week (Part 10) left three papers as dissections and a pile of open 'why' questions. This week turned each dissection into a measured instrument: a value-sufficiency bottleneck that fingerprints every task in three shapes; a collection-mode dissociation that inverts on Cheetah (removing the world model HELPS) with one variance-inflation mechanism behind both regimes; and a first data point on the long-deferred JEPA/SE line — uniformity vs VICReg on a collapse-prone task, a clean null. The recurring law from Part 10 held again: explicit structure is redundant exactly where the value objective already supplies it."
+description: "The week of July 8–15. Last week (Part 10) left a pile of open 'why' questions. This week turned each into a measured instrument and framed the program around four named hypotheses: a value-sufficiency bottleneck that fingerprints every task; a collection-mode dissociation that inverts on Cheetah (removing the world model HELPS) with one variance mechanism behind both regimes; a first data point on the anti-collapse (JEPA/SE) line; and a sharper question — is the world model itself just a learned abstraction, and if so which knob is doing the work? Tables, plots, and the experiments now queued to close the gaps."
 layout: "post"
 showTableOfContents: true
 math: true
@@ -11,71 +11,84 @@ tags: ["world-models", "TD-MPC2", "PPO", "abstraction", "JEPA", "VICReg", "mujoc
 
 {{< katex >}}
 
-> A review of one week — July 8 through July 15 — picking up exactly where
+> A review of one week — July 8 through July 15 — picking up where
 > [Part 10](https://suuttt.github.io/projects/2026-07-08-tdmpc-glass-weekly-review-part10/) left off.
-> Part 10 closed with three papers framed as *dissections* (a wall, a mechanism, a sufficiency law) and a
-> recurring one-line result: **abstraction and reweighting buy nothing the value pathway doesn't already use.**
-> The obvious risk with a "dissection" is that it stays anecdotal. This week was about converting each one into a
-> **measured instrument** — a knob you can turn on any task/model and read a number off. Every figure below is read
-> from disk; the nulls are reported as loudly as the positives.
+> Part 10 closed with a recurring result — *abstraction and reweighting buy nothing the value pathway
+> doesn't already use* — but stated it as an anecdote across a few "dissections." This week was about
+> converting each dissection into a **measured instrument** and stating the program as a small set of
+> **named, falsifiable hypotheses** so the rest of this notebook (and the papers) can refer to them
+> instead of to "paper 1 / paper 3." Every figure is read from disk; nulls are reported as loudly as
+> positives.
 
-## Where last week left us (the motivation)
+## The four hypotheses this program is testing
 
-Part 10 had three-act shape: five bets to beat PPO with abstraction, almost all nulled, then a pivot to dissecting
-*why* the planner already wins. It produced three papers and a set of unanswered "why" questions I flagged for this
-week:
+To keep the rest of this post unambiguous, here are the hypotheses by name. Later sections say which
+each one supports or dents.
 
-- **Q5 — why does TD-MPC2 clear HopperHop when SAC can't?** (the categorical exploration wall)
-- **Q6 — why did abstraction only ever help HopperHop and navigation, nowhere else?**
-- **Q8 — the tension:** HopperHop is simultaneously the *sharpest* PPO wall *and* the only cell where the world
-  model turned out **removable**. How can the hardest task be the one where the model matters least?
-- **Q2 / Q7 — the JEPA/SE debt:** the pure-JEPA and structural-entropy bets (Bets D, E) reversed or hurt back in
-  Part 7, and the whole "anti-collapse structure" line had been parked ever since.
+- **H-COMPRESS (value-information compressibility).** Explicit structure helps a value-based agent only
+  where the *value function needs little of the latent*. The quantity that predicts "is there room to
+  help" is how compressible the value-relevant information is — not horizon length, not task family.
+- **H-WM-ABSTRACT (the world model *is* a learned abstraction).** The consistency loss that trains the
+  latent dynamics builds a task-relevant compression of the observation — i.e. a *learned* abstraction.
+  So "abstraction" and "world model" are not two separate things; the world model is one point on the
+  abstraction axis, and both should be ablated on the same footing.
+- **H-COLLECT (collection mode gates the world model's value).** How load-bearing the world model is
+  depends on whether data is collected by the *policy* or by the *planner* (MPPI rolling the model to
+  act). Planner-collection can make the model matter *more* — or, if it is inaccurate, actively *harm*.
+- **H-VARIANCE (one mechanism, two regimes).** Under planner-collection the world model's net effect is
+  a **variance inflation** of the planner's targets; whether that variance is net-positive or net-harmful
+  is set by the mean/variance ratio of the resulting returns.
 
-Three of these got answered from data this week. The fourth (the JEPA debt) finally got a number instead of a shrug.
+Three of these got sharp evidence this week; H-WM-ABSTRACT is the one I'm now building experiments
+around (see *What's queued*).
 
-## Thread 1 — a value-sufficiency instrument for Paper A (answers Q6)
+## Instrument 1 — the value-sufficiency bottleneck (evidence for H-COMPRESS)
 
-Paper A ("when is explicit abstraction redundant") had a hole: its probe was **decode-\(R^2\)** — how well the
-latent reconstructs the observation. That probe *saturates* for both a strong policy and a collapsed one, so it
-cannot tell you whether an abstraction objective has room to help. It was measuring the wrong thing.
+Part 10's probe was **decode-\(R^2\)** — how well the latent reconstructs the observation. It *saturates*
+for both a strong policy and a collapsed one, so it can't tell you whether structure has room to help.
+The replacement is a **value-sufficiency bottleneck (VBN)**: insert a width-\(D\) bottleneck **on the
+value head's input**, sweep \(D\in\{16,32,64,128\}\) against the unmodified agent, and read the *shape*
+of the curve. That shape is a per-task fingerprint of how much of the latent the value function needs.
 
-The replacement is a **value-sufficiency bottleneck (VBN)**: insert a width-\(D\) bottleneck between the latent and
-the value head, sweep \(D \in \{16,32,64,128\}\) against the unmodified agent, and read the *shape* of the resulting
-curve. That shape is a per-task fingerprint of **how much of the latent the value function actually needs** — which
-is the quantity that decides whether added structure can reorganize anything.
-
-Three tasks, three qualitatively distinct fingerprints (final MPPI return, 5M steps):
+![VBN fingerprints](/images/part19-vbn-fingerprints.png)
 
 | Task | D=16 | D=32 | D=64 | D=128 | vanilla | fingerprint |
 |---|---|---|---|---|---|---|
-| CheetahRun (n=5) | 548 (64%) | 589 (69%) | 627 (73%) | 726 (85%) | 855 | **strictly monotone** — no width suffices |
 | WalkerRun (n=5) | 625 (86%) | 643 (88%) | 666 (92%) | 694 (95%) | 727 | **flat-high** — most compressible; D=16 already 86% |
-| AcrobotSwingup (n=6, medians) | 211 (41%) | 251 (49%) | 311 (61%) | 304 (59%) | 511 | **ramp-to-D64** — least compressible; saturates at D=64, D=128 adds nothing |
+| CheetahRun (n=5) | 548 (64%) | 589 (69%) | 627 (73%) | 726 (85%) | 855 | **strictly monotone** — no width suffices |
+| AcrobotSwingup (n=6, med) | 211 (41%) | 251 (49%) | 311 (61%) | 304 (59%) | 511 | **ramp-to-D64** — least compressible; saturates at D=64 |
+| **HopperHop** | — | — | — | — | — | **not yet swept (queued)** — the removable cell; H-COMPRESS predicts *flat-high* |
 
-And the instrument agrees with the intervention. The stripped-vs-full sufficiency ablation (delete the consistency
-loss, keep everything else) ranks the tasks the *same way* the VBN fingerprint does:
+The instrument agrees with the intervention. The stripped-vs-full ablation (delete the consistency loss)
+ranks the tasks the *same way* the fingerprint does:
 
 $$\text{HopperHop } 0\% \;<\; \text{WalkerRun } {-}7.5\% \;<\; \text{CheetahRun } {-}23.8\% \;<\; \text{AcrobotSwingup } {-}44\%.$$
 
-That co-ranking is the answer to **Q6**: abstraction helps exactly where the value function needs *little* of the
-latent (the flat-high, highly-compressible regime), because that is where an added structural objective has slack to
-reorganize a nearly-sufficient code. The criterion is **value-information compressibility, not horizon length.** The
-VBN curve is checkpoint-cheap and predictive — it is the valid replacement for decode-\(R^2\).
+That co-ranking is the evidence for **H-COMPRESS**: structure helps where the value function needs little
+of the latent (the flat-high regime), because that is where an added objective has slack to reorganize a
+nearly-sufficient code. This *answers Part 10's Q6* ("why did abstraction only ever help HopperHop and
+nav?").
 
-> A note on rigor: the Acrobot fingerprint changed *during* the week and I want to flag why, because it is the kind
-> of thing that quietly corrupts a table. An early read called it "step-at-128." On re-harvest, two of the seeds had
-> only reached ~2.7M steps and were dragging the means; on the six complete-at-5M seeds the curve is a smooth ramp
-> saturating at D=64. Same qualitative story (least-compressible, needs a mid-width, tops out well below vanilla),
-> corrected location. Report medians — Acrobot has two total-collapse seed×width cells and the mean is not robust.
+**Two honest limits of the instrument** (both now queued as experiments, not swept under the rug):
 
-## Thread 2 — the collection-mode dissociation and an inversion for Paper 3 (answers Q5, Q8)
+1. **It probes the *value* head only.** That is deliberate — the planner selects actions by rolling the
+   model and scoring with the value/reward heads, so value-sufficiency is the pathway that gates
+   planning. But it means the fingerprint does not yet speak to the *reward* or *dynamics* heads; a
+   head-by-head bottleneck sweep is queued.
+2. **HopperHop has no row.** We only swept the three DMControl tasks above; the Hopper VBN sweep is
+   queued (H-COMPRESS predicts flat-high, matching its removable status).
 
-Our JAX variant collects data with the *policy*; the canonical TD-MPC2 collects with the *planner* (MPPI rolls the
-world model to **act**, not only to score). If the world model's value comes from planning, then collection mode
-should *modulate* how load-bearing the model is. So we re-ran the stripped-vs-full contrast under
-**planner-collection** on three tasks. The result is a double dissociation with a genuine inversion (finals @2.5M,
-now at **n=9**):
+> A rigor note: the Acrobot fingerprint was called "step-at-128" mid-week. On re-harvest, two seeds had
+> only reached ~2.7M steps and were dragging the means; on the six complete-at-5M seeds it is a smooth
+> ramp saturating at D=64. Same story, corrected location. Report medians (two collapse cells).
+
+## Instrument 2 — collection mode and the world model (evidence for H-COLLECT + H-VARIANCE)
+
+Our JAX variant collects with the *policy*; canonical TD-MPC2 collects with the *planner*. Under
+**planner-collection**, re-running stripped-vs-full on three tasks gives a double dissociation with a
+genuine inversion (finals @2.5M, now **n=9**):
+
+![Collection-mode dissociation](/images/part19-dissociation.png)
 
 | Task | full (median) | stripped (median) | Δ | reading |
 |---|---|---|---|---|
@@ -83,66 +96,95 @@ now at **n=9**):
 | WalkerRun (n=9) | **739** | **606** | **−18.0%** | load-bearing — higher but volatile |
 | CheetahRun (n=9) | **327** | **475** | **+45% (stripped > full)** | **inversion** — the model is *actively harmful* |
 
-On CheetahRun under planner-collection, removing the world model's accuracy doesn't merely fail to hurt — it
-**helps by 45%**. We had *pre-registered* the opposite (stripped would degrade ≥15%); the falsification is the
-spine of the section. And this is not a fluke of one metric: the inversion magnitude settled from +104% (n=5) to a
-stable **+45% at n=9**, direction never wavering.
+On Cheetah, removing the model's accuracy **helps by 45%** — we had *pre-registered* the opposite
+(≥15% degrade). That falsification is the spine of the section, and it is **evidence for H-COLLECT**:
+the world model's value is not a constant, it is gated by collection mode and task.
 
-The mechanism turned out to be readable straight off the eval traces, no new experiment required. The full model
-**inflates eval-return variance ~3× on both tasks** under planner-collection (the poisoned-planner-target signature
-— MPPI selecting actions on a model that periodically hallucinates value). The two tasks differ only in the *scale
-of that variance relative to the mean*:
+The *why* is **H-VARIANCE**, and it is readable straight off the eval traces. The full model inflates
+eval-return variance **~3× on both tasks**. The tasks differ only in scale relative to the mean: on
+Walker the model lifts the mean to ~740 so the swings stay net-positive; on Cheetah the swings drag
+finals to ~117, below the stable stripped model (~475), so variance tips into net harm. **One mechanism,
+two regimes, set by the mean/variance ratio.**
 
-- On **Walker**, the model lifts the mean to ~740, so the ~3× swings stay net-positive → higher-but-volatile.
-- On **Cheetah**, the swings are large enough that final returns dip to ~117, dragging the mean *below* the stable
-  stripped model (~475) → variance tips into net harm.
+This also dissolves Part 10's **Q8** (Hopper is both the sharpest PPO wall *and* the only removable cell):
+stripping consistency removes the model's *accuracy* but not the *planner*. TD-MPC2 clears Hopper via
+planning + off-policy data (**Q5**: deterministic actor, no entropy — SAC fails Hopper 0/9 while the
+planner-free TD core is 8/8), and the model is removable *because the planner carries it*.
 
-**One mechanism (the world model inflates the planner's target variance ~3×), two regimes, set by the mean/variance
-ratio.** That also dissolves **Q8**: HopperHop can be both the sharpest PPO wall and the only removable cell because
-stripping the consistency loss removes the model's *accuracy* but not the *planner*. TD-MPC2 clears Hopper via
-planning-over-a-rough-model plus off-policy data (**Q5**: deterministic actor, no entropy term — the entropy grid
-has SAC failing Hopper 0/9 while the planner-free TD core is 8/8), and the model is removable *because the planner
-carries it*. The wall itself is the conjunctive reward, independent of the model.
+So the two headline conclusions — **(a)** the world model's value is task-dependent, **(b)** planning-in-
+collection is (mostly) a sample-efficiency operator — now have a shared mechanism underneath (a), not
+just an observation: it is the variance-inflation of H-VARIANCE, with the sign flip explained.
 
-## Thread 3 — paying down the JEPA/SE debt (a first number for Q2/Q7)
+## Instrument 3 — the anti-collapse line, and a sharper question (H-WM-ABSTRACT)
 
-The anti-collapse line (Bets D and E) had been parked since Part 7. Mid-week I pulled it back in and gave it the same
-treatment as the others: pick the task the VBN instrument flags as **least compressible / most collapse-prone**
-(CheetahRun — the strictly-monotone fingerprint) and run the two canonical anti-collapse levers head to head against
-a matched vanilla baseline:
+The anti-collapse (JEPA/SE) bets were parked since Part 7. This week I ran the two canonical levers on
+the task the VBN instrument flags as *least compressible* (CheetahRun): **uniformity** vs **VICReg**
+against a matched vanilla baseline.
 
-| arm | CheetahRun (last-6 median) | vs vanilla (~818) |
+![JEPA #59 null on Cheetah](/images/part19-jepa59-null.png)
+
+| arm | CheetahRun (last-6 median, n=2) | vs vanilla (~818) |
 |---|---|---|
-| **uniformity** (hypersphere) | 725.8 | −11.3% |
-| **VICReg** (variance-covariance) | 751.3 | −8.2% |
+| uniformity (urc) | 725.8 | −11.3% |
+| VICReg (vac) | 751.3 | −8.2% |
 | vanilla | ~818 | — |
 
-Uniformity ≈ VICReg (within seed noise), and **both sit slightly *below* vanilla** (n=2; a refill to n=4 is running).
-A null — and, importantly, the *expected* null. It is the JEPA-line instance of Paper A's central claim: TD-MPC2's
-latent is already shaped by the value/TD objective, which prevents the degenerate collapse these regularizers exist
-to defend against. Adding an explicit anti-collapse term is therefore redundant (and mildly harmful, via an extra
-loss competing with the value signal). This matches the earlier H-JEPA and SE-structured-JEPA nulls on Panda — the
-same law, now with a clean DMControl data point instead of a hand-wave.
+Uniformity ≈ VICReg, both *below* vanilla — a null, and the *expected* null under H-COMPRESS: TD-MPC2's
+latent is already shaped by the value/TD objective, which prevents the collapse these regularizers exist
+to fight. (A boundary test is now **running** on WalkerRun — the *most*-compressible regime, where
+anti-collapse has the most room to help; if it's null there too, H-COMPRESS is airtight.)
 
-## The one-line law, again
+**But there is a caveat I want to state plainly, because it is the most interesting gap.** "Anti-collapse
+regularizer" and "consistency loss" are only two points on the abstraction axis. They are *not* the
+richer abstraction machinery — **SimNorm**, the **structural-entropy / glass** latents, **clustering /
+discretization**, or **behavioral** abstractions like **TAMP / skill-options**. The redundancy claim, so
+far, is proven for anti-collapse + consistency; whether those *other* mechanisms are also redundant is an
+open, and separately testable, question. It is queued.
 
-Three independent threads, one recurring result:
+### The world model as an abstraction (H-WM-ABSTRACT)
 
-> **Explicit structure — a reconstruction bottleneck, a consistency loss, an anti-collapse penalty — is redundant
-> exactly where the value objective already supplies what it would add; and where the value pathway is *not*
-> nearly-sufficient, adding structure buys volatility, not a ceiling.**
+Here is the reframing this review is really driving at, and the reader's question that prompted it:
+*the consistency loss trains the world model, so is the world model a kind of abstraction?* I think the
+promising hypothesis is **yes** — the latent-dynamics model is a *learned, task-relevant compression*,
+which is exactly what an abstraction is. Under that view:
 
-The novelty this week is that each of those is now an *instrument*, not an anecdote: a VBN curve you can read per
-task, a collection-mode × variance mechanism you can compute from eval traces, and an anti-collapse comparison with
-a baseline. Both paper cores (Paper A: sufficiency; Paper 3: the mechanism/inversion) are compute-complete at their
-final \(n\); what remains is writing.
+- "Stripped vs full" is *already* an abstraction ablation — it ablates the **learned** abstraction (the
+  world model) while leaving the planner.
+- The SE/glass/SimNorm experiments are ablations of an **imposed** abstraction.
+- The clean experiment is to **cross them**: ablate the imposed abstraction *and* the world model on the
+  same grid, per task, so we can see which piece — imposed structure, learned dynamics, or the planner —
+  is the *working part*. My current bet: on the flat-high tasks the working part is the value pathway and
+  both abstractions are redundant; on the ramp/monotone tasks the learned world model carries real weight
+  (that's what the −24%/−44% strip costs say) while imposed structure still adds nothing.
+
+That cross-ablation is the headline experiment queued below.
+
+## The one-line law, restated by hypothesis
+
+> **H-COMPRESS:** explicit structure is redundant exactly where the value objective already supplies what
+> it would add. **H-WM-ABSTRACT:** the world model is itself a learned abstraction, and *it* is the
+> abstraction that carries weight where the value code is not nearly-sufficient. Where neither holds,
+> structure buys variance (**H-VARIANCE**), not a ceiling.
+
+## What's queued (issues filed to the repo)
+
+The review surfaced concrete gaps; each is now a tracked issue on `SuuTTT/tdmpc-glass`:
+
+1. **Official-parity / dual-implementation test** — run the same tasks on official TD-MPC2 vs our JAX
+   reimplementation, matched-seed, to certify the reimplementation before the papers lean on it.
+2. **VBN on HopperHop + head-by-head bottleneck** — fill the missing fingerprint row and extend the
+   bottleneck from the value head to the reward and dynamics heads.
+3. **Do the *other* abstractions help? (SimNorm / SE-glass / clustering / TAMP)** — the redundancy claim
+   is currently only tested on anti-collapse + consistency; test the richer abstraction menu, guided by
+   the VBN fingerprint (predict where each should help).
+4. **World-model-as-abstraction cross-ablation (H-WM-ABSTRACT)** — jointly ablate imposed abstraction and
+   the learned world model per task, to isolate the working part.
+5. **Deeper theory for task-conditional load-bearingness** — formalize *why* the mean/variance ratio (and
+   HopperHop's conjunctive reward + exploration wall) makes some tasks removable-cell and others not.
 
 ## Next
 
-- **Freeze compute, write.** Papers A and 3 are data-complete; the deadline work is prose and figures, not GPUs.
-- **JEPA #59 to n=4** finishes the one open confirmatory run.
-- The **fleet is over-provisioned for what's left** — eight RTX 3060s, half of them now idle because their sweeps
-  are done. The honest bottleneck this week was never total GPU count; it was that small DMControl models
-  underutilize a 3060 and we serialize two widths per card. If we open a *new* experimental front next week
-  (resuming the JEPA/SE program properly, or a confirmatory planner-target probe for Paper 3), the right move is a
-  small number of *faster* cards run one-job-per-GPU, not more 3060s tightening error bars on finished science.
+- **Freeze compute on Papers A & 3, write.** Both are data-complete at their final \(n\).
+- The **WalkerRun anti-collapse boundary sweep** is running now across a rented 4×4070 plus the freed
+  3060 box; its verdict (null or not) closes the H-COMPRESS boundary.
+- The **H-WM-ABSTRACT cross-ablation** is the first experiment of the new front.

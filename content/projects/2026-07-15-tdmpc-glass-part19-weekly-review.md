@@ -38,13 +38,18 @@ First, two terms the whole program turns on:
 
 With those fixed, the four hypotheses:
 
-- **H-COMPRESS (value-information compressibility).**
-  *Claim:* adding explicit structure helps **only** on tasks where the **value head needs just a small
-  slice of the latent** to predict returns well.
+- **H-COMPRESS (value-information compressibility) — a PREDICTION still under test, not a result.**
+  *Claim:* adding **imposed** structure (anti-collapse / SE / SimNorm) helps **only** on tasks where the
+  **value head needs just a small slice of the latent** (the flat-high regime).
   *Intuition:* if the value/TD objective already spends the *entire* latent computing value, the
-  representation is "full" — there is no spare capacity for an added objective to reorganize, so structure
-  can't help. If the value head needs only a *little* of the latent, the rest is effectively free, and an
-  added objective has room to shape it usefully.
+  representation is "full" — no spare capacity for an added objective to reorganize. If the value head
+  needs only a *little*, the rest is effectively free, and an added objective *might* have room to shape
+  it usefully.
+  *Status (be honest):* the leap from "there is free capacity" to "filling it with structure helps" is
+  **not yet demonstrated.** Our one completed add-structure test is #59 on **Cheetah** (least-compressible)
+  — null, as expected there. The decisive positive test is on **WalkerRun** (most-compressible), running
+  now; its interim read shows **no separation** between arms. If Walker finishes null, H-COMPRESS's
+  positive half is *falsified* and the cleaner statement is "imposed structure is redundant everywhere."
   *How we measure "how much of the latent the value head needs":* the value-sufficiency bottleneck (VBN)
   — force the value head's input through a width-\(D\) bottleneck and sweep \(D\in\{16,32,64,128\}\). If
   return barely drops at small \(D\), the value-relevant information is highly **compressible** (the head
@@ -103,10 +108,23 @@ ranks the tasks the *same way* the fingerprint does:
 
 $$\text{HopperHop } 0\% \;<\; \text{WalkerRun } {-}7.5\% \;<\; \text{CheetahRun } {-}23.8\% \;<\; \text{AcrobotSwingup } {-}44\%.$$
 
-That co-ranking is the evidence for **H-COMPRESS**: structure helps where the value function needs little
-of the latent (the flat-high regime), because that is where an added objective has slack to reorganize a
-nearly-sufficient code. This *answers Part 10's Q6* ("why did abstraction only ever help HopperHop and
-nav?").
+Read carefully, this co-ranking is evidence for **H-WM-ABSTRACT**, *not* H-COMPRESS — and the direction
+matters. The strip cost measures how much the **learned world model** carries; it is **largest where
+compressibility is LOWEST** (Cheetah −24%, Acrobot −44%) and zero where the task is most compressible
+(Hopper). So the *learned* abstraction is load-bearing exactly where the value head needs **a lot** of
+the latent — the **opposite** end of the axis from where *imposed* structure is supposed to help. Two
+distinct statements, easy to conflate:
+
+1. **Learned abstraction (world model) is load-bearing in low-compressibility tasks** — proven here.
+2. **Imposed structure helps in high-compressibility (flat-high) tasks** — H-COMPRESS's *prediction*,
+   still under test (Walker), interim null.
+
+This sharpens Part 10's Q6 ("why did abstraction ever help on HopperHop/nav?") rather than closing it.
+Q6 was about *imposed* abstraction on high-compressibility tasks — precisely the claim that is **still
+open** (instrument 3, Walker running). What the co-ranking settles is the *other* half: the **learned**
+world model is load-bearing on the low-compressibility tasks, and removable where compressibility is
+high (Hopper 0%). So Hopper is the clean case where *neither* abstraction is needed — the value pathway
+plus a rough planner already suffice.
 
 **Two honest limits of the instrument** (both now queued as experiments, not swept under the rug):
 

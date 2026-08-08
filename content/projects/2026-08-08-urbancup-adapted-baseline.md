@@ -1,7 +1,7 @@
 ---
 title: "The Adapted Baseline: how five GPU-hours won a video-QA competition, and what that says about leaderboards"
 date: 2026-08-08
-description: "First place in UrbanCup 2026 Track 1 with a $1.20 LoRA adapter. The interesting part is not the win — it is that the benchmark's own paper had already fine-tuned, reported 31, and nobody re-ran it."
+description: "First place in UrbanCup 2026 Track 1 with a five-GPU-hour LoRA adapter. The interesting part is not the win — it is that the benchmark's own paper had already fine-tuned, reported 31, and nobody re-ran it."
 layout: "post"
 showTableOfContents: true
 math: true
